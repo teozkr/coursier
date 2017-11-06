@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -e
+
+SCALAFMT_VERSION=1.3.0
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+cd "$DIR"/..
+mkdir -p target
+
+SCALAFMT="target/scalafmt-$SCALAFMT_VERSION"
+
+if [ ! -e "$SCALAFMT" ]; then
+  ./coursier bootstrap "com.geirsson:scalafmt-cli_2.11:$SCALAFMT_VERSION" --main org.scalafmt.cli.Cli -o "$SCALAFMT"
+fi
+
+if [ "$#" = 0 ]; then
+  "$SCALAFMT" -i -f .
+else
+  "$SCALAFMT" "$@"
+fi
