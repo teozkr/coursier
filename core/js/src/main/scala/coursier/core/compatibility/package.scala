@@ -19,9 +19,8 @@ package object compatibility {
   private def between(c: Char, lower: Char, upper: Char) = lower <= c && c <= upper
 
   implicit class RichChar(val c: Char) extends AnyVal {
-    def letterOrDigit: Boolean = {
+    def letterOrDigit: Boolean =
       between(c, '0', '9') || letter
-    }
     def letter: Boolean = between(c, 'a', 'z') || between(c, 'A', 'Z')
   }
 
@@ -71,7 +70,6 @@ package object compatibility {
     }
   }
 
-
   def xmlParse(s: String): Either[String, Xml.Node] = {
     val doc = {
       if (s.isEmpty) None
@@ -81,7 +79,8 @@ package object compatibility {
           rootNodes <- dynOption(xmlDoc.childNodes)
           // From node, rootNodes.head is sometimes just a comment instead of the main root node
           // (tested with org.ow2.asm:asm-commons in CentralTests)
-          rootNode <- rootNodes.asInstanceOf[js.Array[js.Dynamic]]
+          rootNode <- rootNodes
+            .asInstanceOf[js.Array[js.Dynamic]]
             .flatMap(option[org.scalajs.dom.raw.Node])
             .dropWhile(_.nodeType != ELEMENT_NODE)
             .headOption

@@ -18,7 +18,10 @@ object Keys {
   val coursierArtifactsChecksums = SettingKey[Seq[Option[String]]]("coursier-artifacts-checksums")
   val coursierCachePolicies = SettingKey[Seq[CachePolicy]]("coursier-cache-policies")
   val coursierTtl = SettingKey[Option[Duration]]("coursier-ttl")
-  val coursierKeepPreloaded = SettingKey[Boolean]("coursier-keep-preloaded", "Whether to take into account sbt preloaded repositories or not")
+  val coursierKeepPreloaded = SettingKey[Boolean](
+    "coursier-keep-preloaded",
+    "Whether to take into account sbt preloaded repositories or not"
+  )
 
   val coursierVerbosity = SettingKey[Int]("coursier-verbosity")
 
@@ -29,26 +32,34 @@ object Keys {
     "Whether resolvers should be re-ordered so that typically slow ones are given a lower priority"
   )
   val coursierResolvers = TaskKey[Seq[Resolver]]("coursier-resolvers")
-  val coursierRecursiveResolvers = TaskKey[Seq[Resolver]]("coursier-recursive-resolvers", "Resolvers of the current project, plus those of all from its inter-dependency projects")
+  val coursierRecursiveResolvers = TaskKey[Seq[Resolver]](
+    "coursier-recursive-resolvers",
+    "Resolvers of the current project, plus those of all from its inter-dependency projects"
+  )
   val coursierSbtResolvers = TaskKey[Seq[Resolver]]("coursier-sbt-resolvers")
   val coursierUseSbtCredentials = SettingKey[Boolean]("coursier-use-sbt-credentials")
   val coursierCredentials = TaskKey[Map[String, Credentials]]("coursier-credentials")
 
   val coursierCache = SettingKey[File]("coursier-cache")
 
-  val coursierFallbackDependencies = TaskKey[Seq[(Module, String, URL, Boolean)]]("coursier-fallback-dependencies")
+  val coursierFallbackDependencies =
+    TaskKey[Seq[(Module, String, URL, Boolean)]]("coursier-fallback-dependencies")
 
   val coursierProject = TaskKey[Project]("coursier-project")
   val coursierConfigGraphs = TaskKey[Seq[Set[String]]]("coursier-config-graphs")
-  val coursierInterProjectDependencies = TaskKey[Seq[Project]]("coursier-inter-project-dependencies", "Projects the current project depends on, possibly transitively")
+  val coursierInterProjectDependencies = TaskKey[Seq[Project]](
+    "coursier-inter-project-dependencies",
+    "Projects the current project depends on, possibly transitively"
+  )
   val coursierPublications = TaskKey[Seq[(String, Publication)]]("coursier-publications")
 
-  val coursierSbtClassifiersModule = TaskKey[GetClassifiersModule]("coursier-sbt-classifiers-module")
+  val coursierSbtClassifiersModule =
+    TaskKey[GetClassifiersModule]("coursier-sbt-classifiers-module")
 
   val coursierConfigurations = TaskKey[Map[String, Set[String]]]("coursier-configurations")
 
-
-  val coursierParentProjectCache = TaskKey[Map[Seq[Resolver], Seq[ProjectCache]]]("coursier-parent-project-cache")
+  val coursierParentProjectCache =
+    TaskKey[Map[Seq[Resolver], Seq[ProjectCache]]]("coursier-parent-project-cache")
   val coursierResolutions = TaskKey[Map[Set[String], Resolution]]("coursier-resolutions")
 
   private[coursier] val actualCoursierResolution = TaskKey[Resolution]("coursier-resolution")
@@ -67,7 +78,10 @@ object Keys {
   )
 
   val coursierArtifacts = TaskKey[Map[Artifact, FileError \/ File]]("coursier-artifacts")
-  val coursierSignedArtifacts = TaskKey[Map[Artifact, FileError \/ File]]("coursier-signed-artifacts")
-  val coursierClassifiersArtifacts = TaskKey[Map[Artifact, FileError \/ File]]("coursier-classifiers-artifacts")
-  val coursierSbtClassifiersArtifacts = TaskKey[Map[Artifact, FileError \/ File]]("coursier-sbt-classifiers-artifacts")
+  val coursierSignedArtifacts =
+    TaskKey[Map[Artifact, FileError \/ File]]("coursier-signed-artifacts")
+  val coursierClassifiersArtifacts =
+    TaskKey[Map[Artifact, FileError \/ File]]("coursier-classifiers-artifacts")
+  val coursierSbtClassifiersArtifacts =
+    TaskKey[Map[Artifact, FileError \/ File]]("coursier-sbt-classifiers-artifacts")
 }

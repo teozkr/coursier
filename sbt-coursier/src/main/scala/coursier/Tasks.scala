@@ -90,8 +90,7 @@ object Tasks {
                 sbtResolver.value,
                 Classpaths.sbtPluginReleases
               ) ++ extRes
-            }
-          else
+            } else
             Def.task(extRes)
         }
     }
@@ -132,7 +131,8 @@ object Tasks {
       Def.task(t.value)
     }
 
-  def coursierFallbackDependenciesTask: Def.Initialize[sbt.Task[Seq[(Module, String, URL, Boolean)]]] =
+  def coursierFallbackDependenciesTask
+    : Def.Initialize[sbt.Task[Seq[(Module, String, URL, Boolean)]]] =
     Def.taskDyn {
 
       val state = sbt.Keys.state.value
@@ -184,7 +184,10 @@ object Tasks {
               Nil
             } else
               Seq(
-                (rule.organization, FromSbt.sbtCrossVersionName(rule.name, rule.crossVersion, sv, sbv))
+                (
+                  rule.organization,
+                  FromSbt.sbtCrossVersionName(rule.name, rule.crossVersion, sv, sbv)
+                )
               )
           }
           .toSet
@@ -344,7 +347,9 @@ object Tasks {
       // Second-way of getting artifacts from SBT
       // No obvious way of getting the corresponding  publishArtifact  value for the ones
       // only here, it seems.
-      val extraSbtArtifacts = artifacts.in(projectRef).getOrElse(state, Nil)
+      val extraSbtArtifacts = artifacts
+        .in(projectRef)
+        .getOrElse(state, Nil)
         .filterNot(stdArtifactsSet)
 
       // Seems that SBT does that - if an artifact has no configs,
@@ -364,12 +369,9 @@ object Tasks {
 
   def coursierConfigurationsTask(shadedConfig: Option[(String, String)]) = Def.task {
 
-    val configs0 = ivyConfigurations
-      .value
-      .map { config =>
-        config.name -> config.extendsConfigs.map(_.name)
-      }
-      .toMap
+    val configs0 = ivyConfigurations.value.map { config =>
+      config.name -> config.extendsConfigs.map(_.name)
+    }.toMap
 
     def allExtends(c: String) = {
       // possibly bad complexity
@@ -414,7 +416,8 @@ object Tasks {
     ignoreArtifactErrors: Boolean
   )
 
-  private[coursier] val resolutionsCache = new mutable.HashMap[ResolutionCacheKey, Map[Set[String], Resolution]]
+  private[coursier] val resolutionsCache =
+    new mutable.HashMap[ResolutionCacheKey, Map[Set[String], Resolution]]
   // these may actually not need to be cached any more, now that the resolutions
   // are cached
   private[coursier] val reportsCache = new mutable.HashMap[ReportCacheKey, UpdateReport]
@@ -447,21 +450,20 @@ object Tasks {
     addUriProp("sbt.global.base")
     addUriProp("user.home")
 
-    {
-      s =>
-        val p = PropertiesPattern.parse(s) match {
-          case -\/(err) =>
-            throw new Exception(s"Cannot parse pattern $s: $err")
-          case \/-(p) =>
-            p
-        }
+    { s =>
+      val p = PropertiesPattern.parse(s) match {
+        case -\/(err) =>
+          throw new Exception(s"Cannot parse pattern $s: $err")
+        case \/-(p) =>
+          p
+      }
 
-        p.substituteProperties(props ++ extraProps) match {
-          case -\/(err) =>
-            throw new Exception(err)
-          case \/-(p) =>
-            p
-        }
+      p.substituteProperties(props ++ extraProps) match {
+        case -\/(err) =>
+          throw new Exception(err)
+        case \/-(p) =>
+          p
+      }
     }
   }
 
@@ -484,7 +486,8 @@ object Tasks {
     ).map(exceptionPatternParser())
   }
 
-  def parentProjectCacheTask: Def.Initialize[sbt.Task[Map[Seq[sbt.Resolver],Seq[coursier.ProjectCache]]]] =
+  def parentProjectCacheTask
+    : Def.Initialize[sbt.Task[Map[Seq[sbt.Resolver], Seq[coursier.ProjectCache]]]] =
     Def.taskDyn {
 
       val state = sbt.Keys.state.value
@@ -512,14 +515,16 @@ object Tasks {
                 resolvers <- m.get(ref)
                 resolution <- mainResOpt
               } yield
-                caches.updated(resolvers, resolution.projectCache +: caches.getOrElse(resolvers, Seq.empty))
+                caches.updated(
+                  resolvers,
+                  resolution.projectCache +: caches.getOrElse(resolvers, Seq.empty)
+                )
 
               r.getOrElse(caches)
           }
 
       Def.task(t.value)
     }
-
 
   def ivyGraphsTask = Def.task {
 
@@ -566,7 +571,6 @@ object Tasks {
   private val noOptionalFilter: Option[Dependency => Boolean] = Some(dep => !dep.optional)
   private val typelevelOrgSwap: Option[Dependency => Dependency] = Some(Typelevel.swap(_))
 
-
   def resolutionsTask(
     sbtClassifiers: Boolean = false
   ): Def.Initialize[sbt.Task[Map[Set[String], coursier.Resolution]]] = Def.taskDyn {
@@ -576,7 +580,9 @@ object Tasks {
     val sv = scalaVersion.value
     val sbv = scalaBinaryVersion.value
 
-    val currentProjectTask: sbt.Def.Initialize[sbt.Task[(Project, Seq[(Module, String, URL, Boolean)], Seq[Set[String]])]] =
+    val currentProjectTask: sbt.Def.Initialize[
+      sbt.Task[(Project, Seq[(Module, String, URL, Boolean)], Seq[Set[String]])]
+    ] =
       if (sbtClassifiers)
         Def.task {
           val cm = coursierSbtClassifiersModule.value
@@ -589,11 +595,14 @@ object Tasks {
           )
 
           (proj, fallbackDeps, Vector(cm.configurations.map(_.name).toSet))
-        }
-      else
+        } else
         Def.task {
           val baseConfigGraphs = coursierConfigGraphs.value
-          (coursierProject.value.copy(publications = coursierPublications.value), coursierFallbackDependencies.value, baseConfigGraphs)
+          (
+            coursierProject.value.copy(publications = coursierPublications.value),
+            coursierFallbackDependencies.value,
+            baseConfigGraphs
+          )
         }
 
     val interProjectDependencies = coursierInterProjectDependencies.value
@@ -610,8 +619,7 @@ object Tasks {
     // are these always defined? (e.g. for Java only projects?)
     val so = scalaOrganization.value
 
-    val userForceVersions = dependencyOverrides
-      .value
+    val userForceVersions = dependencyOverrides.value
       .map(FromSbt.moduleVersion(_, sv, sbv))
       .toMap
 
@@ -629,12 +637,13 @@ object Tasks {
 
     val globalPluginsRepos =
       for (p <- globalPluginPatterns(sbtBinaryVersion.value))
-        yield IvyRepository.fromPattern(
-          p,
-          withChecksums = false,
-          withSignatures = false,
-          withArtifacts = false
-        )
+        yield
+          IvyRepository.fromPattern(
+            p,
+            withChecksums = false,
+            withSignatures = false,
+            withArtifacts = false
+          )
 
     val interProjectRepo = InterProjectRepository(interProjectDependencies)
 
@@ -673,8 +682,7 @@ object Tasks {
               c.host -> Authentication(c.userName, c.passwd)
             }
             .toMap
-        }
-      else
+        } else
         Def.task(Map.empty[String, Authentication])
 
     val authenticationByRepositoryId = coursierCredentials.value.mapValues(_.authentication)
@@ -712,7 +720,10 @@ object Tasks {
           log.info(s"  ${p.module}:${p.version}")
       }
 
-      def withAuthenticationByHost(repo: Repository, credentials: Map[String, Authentication]): Repository = {
+      def withAuthenticationByHost(
+        repo: Repository,
+        credentials: Map[String, Authentication]
+      ): Repository = {
 
         def httpHost(s: String) =
           if (s.startsWith("http://") || s.startsWith("https://"))
@@ -725,15 +736,17 @@ object Tasks {
             if (m.authentication.isEmpty)
               httpHost(m.root).flatMap(credentials.get).fold(m) { auth =>
                 m.copy(authentication = Some(auth))
-              }
-            else
+              } else
               m
           case i: IvyRepository =>
             if (i.authentication.isEmpty) {
-              val base = i.pattern.chunks.takeWhile {
-                case _: coursier.ivy.Pattern.Chunk.Const => true
-                case _ => false
-              }.map(_.string).mkString
+              val base = i.pattern.chunks
+                .takeWhile {
+                  case _: coursier.ivy.Pattern.Chunk.Const => true
+                  case _                                   => false
+                }
+                .map(_.string)
+                .mkString
 
               httpHost(base).flatMap(credentials.get).fold(i) { auth =>
                 i.copy(authentication = Some(auth))
@@ -749,24 +762,23 @@ object Tasks {
 
       val repositories =
         internalRepositories ++
-          resolvers.flatMap { resolver =>
-            FromSbt.repository(
-              resolver,
-              ivyProperties,
-              log,
-              authenticationByRepositoryId.get(resolver.name)
-            )
-          }.map(withAuthenticationByHost(_, authenticationByHost)) ++
+          resolvers
+            .flatMap { resolver =>
+              FromSbt.repository(
+                resolver,
+                ivyProperties,
+                log,
+                authenticationByRepositoryId.get(resolver.name)
+              )
+            }
+            .map(withAuthenticationByHost(_, authenticationByHost)) ++
           fallbackDependenciesRepositories
 
       def startRes(configs: Set[String]) = Resolution(
-        currentProject
-          .dependencies
-          .collect {
-            case (config, dep) if configs(config) =>
-              dep
-          }
-          .toSet,
+        currentProject.dependencies.collect {
+          case (config, dep) if configs(config) =>
+            dep
+        }.toSet,
         filter = noOptionalFilter,
         userActivations =
           if (userEnabledProfiles.isEmpty)
@@ -779,7 +791,8 @@ object Tasks {
             (if (configs("compile") || configs("scala-tool")) forcedScalaModules(so, sv) else Map()) ++
             interProjectDependencies.map(_.moduleVersion),
         projectCache = parentProjectCache,
-        mapDependencies = if (typelevel && (configs("compile") || configs("scala-tool"))) typelevelOrgSwap else None
+        mapDependencies =
+          if (typelevel && (configs("compile") || configs("scala-tool"))) typelevelOrgSwap else None
       )
 
       def resolution(startRes: Resolution) = {
@@ -790,21 +803,41 @@ object Tasks {
         val printOptionalMessage = verbosityLevel >= 0 && verbosityLevel <= 1
 
         val res = try {
-          pool = Executors.newFixedThreadPool(parallelDownloads, Strategy.DefaultDaemonThreadFactory)
+          pool =
+            Executors.newFixedThreadPool(parallelDownloads, Strategy.DefaultDaemonThreadFactory)
           resLogger = createLogger()
 
           val fetch = Fetch.from(
             repositories,
-            Cache.fetch(cache, cachePolicies.head, checksums = checksums, logger = Some(resLogger), pool = pool, ttl = ttl),
-            cachePolicies.tail.map(p =>
-              Cache.fetch(cache, p, checksums = checksums, logger = Some(resLogger), pool = pool, ttl = ttl)
+            Cache.fetch(
+              cache,
+              cachePolicies.head,
+              checksums = checksums,
+              logger = Some(resLogger),
+              pool = pool,
+              ttl = ttl
+            ),
+            cachePolicies.tail.map(
+              p =>
+                Cache.fetch(
+                  cache,
+                  p,
+                  checksums = checksums,
+                  logger = Some(resLogger),
+                  pool = pool,
+                  ttl = ttl
+              )
             ): _*
           )
 
           def depsRepr(deps: Seq[(String, Dependency)]) =
-            deps.map { case (config, dep) =>
-              s"${dep.module}:${dep.version}:$config->${dep.configuration}"
-            }.sorted.distinct
+            deps
+              .map {
+                case (config, dep) =>
+                  s"${dep.module}:${dep.version}:$config->${dep.configuration}"
+              }
+              .sorted
+              .distinct
 
           if (verbosityLevel >= 2) {
             val repoReprs = repositories.map {
@@ -832,9 +865,7 @@ object Tasks {
               else
                 Nil,
               if (verbosityLevel >= 2)
-                depsRepr(currentProject.dependencies).map(depRepr =>
-                  s"  $depRepr"
-                )
+                depsRepr(currentProject.dependencies).map(depRepr => s"  $depRepr")
               else
                 Nil
             ).flatten.mkString("\n")
@@ -844,13 +875,14 @@ object Tasks {
 
           resLogger.init(if (printOptionalMessage) log.info(initialMessage))
 
-          startRes
-            .process
+          startRes.process
             .run(fetch, maxIterations)
             .unsafePerformSyncAttempt
-            .leftMap(ex =>
-              ResolutionError.UnknownException(ex)
-                .throwException()
+            .leftMap(
+              ex =>
+                ResolutionError
+                  .UnknownException(ex)
+                  .throwException()
             )
             .merge
         } finally {
@@ -868,25 +900,27 @@ object Tasks {
         if (res.conflicts.nonEmpty) {
           val projCache = res.projectCache.mapValues { case (_, p) => p }
 
-          ResolutionError.Conflicts(
-            "Conflict(s) in dependency resolution:\n  " +
-              Print.dependenciesUnknownConfigs(res.conflicts.toVector, projCache)
-          ).throwException()
+          ResolutionError
+            .Conflicts(
+              "Conflict(s) in dependency resolution:\n  " +
+                Print.dependenciesUnknownConfigs(res.conflicts.toVector, projCache)
+            )
+            .throwException()
         }
 
         if (res.metadataErrors.nonEmpty) {
           val internalRepositoriesLen = internalRepositories.length
           val errors =
             if (repositories.length > internalRepositoriesLen)
-            // drop internal repository errors
+              // drop internal repository errors
               res.metadataErrors.map {
                 case (dep, errs) =>
                   dep -> errs.drop(internalRepositoriesLen)
-              }
-            else
+              } else
               res.metadataErrors
 
-          ResolutionError.MetadataDownloadErrors(errors)
+          ResolutionError
+            .MetadataDownloadErrors(errors)
             .throwException()
         }
 
@@ -957,7 +991,7 @@ object Tasks {
 
       val allArtifacts0 =
         classifiers match {
-          case None => res.flatMap(_.artifacts(withOptional = true))
+          case None     => res.flatMap(_.artifacts(withOptional = true))
           case Some(cl) => res.flatMap(_.classifiersArtifacts(cl))
         }
 
@@ -966,8 +1000,7 @@ object Tasks {
           allArtifacts0.flatMap { a =>
             val sigOpt = a.extra.get("sig").map(_.copy(attributes = Attributes()))
             Seq(a) ++ sigOpt.toSeq
-          }
-        else
+          } else
           allArtifacts0
 
       // let's update only one module at once, for a better output
@@ -980,7 +1013,8 @@ object Tasks {
         val printOptionalMessage = verbosityLevel >= 0 && verbosityLevel <= 1
 
         val artifactFilesOrErrors = try {
-          pool = Executors.newFixedThreadPool(parallelDownloads, Strategy.DefaultDaemonThreadFactory)
+          pool =
+            Executors.newFixedThreadPool(parallelDownloads, Strategy.DefaultDaemonThreadFactory)
           artifactsLogger = createLogger()
 
           val artifactFileOrErrorTasks = allArtifacts.toVector.distinct.map { a =>
@@ -996,7 +1030,7 @@ object Tasks {
               )
 
             cachePolicies.tail
-              .foldLeft(f(cachePolicies.head))(_ orElse f(_))
+              .foldLeft(f(cachePolicies.head))(_.orElse(f(_)))
               .run
               .map((a, _))
           }
@@ -1015,7 +1049,8 @@ object Tasks {
 
           Task.gatherUnordered(artifactFileOrErrorTasks).unsafePerformSyncAttempt match {
             case -\/(ex) =>
-              ResolutionError.UnknownDownloadException(ex)
+              ResolutionError
+                .UnknownDownloadException(ex)
                 .throwException()
             case \/-(l) =>
               l.toMap
@@ -1024,7 +1059,8 @@ object Tasks {
           if (pool != null)
             pool.shutdown()
           if (artifactsLogger != null)
-            if ((artifactsLogger.stopDidPrintSomething() && printOptionalMessage) || verbosityLevel >= 2)
+            if ((artifactsLogger
+                  .stopDidPrintSomething() && printOptionalMessage) || verbosityLevel >= 2)
               log.info(
                 s"Fetched artifacts of $projectName" +
                   (if (sbtClassifiers) " (sbt classifiers)" else "")
@@ -1159,8 +1195,7 @@ object Tasks {
           val cm = coursierSbtClassifiersModule.value
           val classifiersRes = coursierSbtClassifiersResolution.value
           Map(cm.configurations.map(c => c.name).toSet -> classifiersRes)
-        }
-      else
+        } else
         Def.task(coursierResolutions.value)
 
     // we should be able to call .value on that one here, its conditions don't originate from other tasks
@@ -1180,8 +1215,7 @@ object Tasks {
         Def.task {
           val cm = coursierSbtClassifiersModule.value
           cm.configurations.map(c => c.name -> Set(c.name)).toMap
-        }
-      else
+        } else
         Def.task {
           val configs0 = coursierConfigurations.value
 
@@ -1199,8 +1233,7 @@ object Tasks {
           Def.task {
             val cm = coursierSbtClassifiersModule.value
             Some(cm.classifiers)
-          }
-        else
+          } else
           Def.task(Some(transitiveClassifiers.value))
       } else
         Def.task(None)
@@ -1226,7 +1259,7 @@ object Tasks {
                 baseConfig
               case _ =>
                 config
-            }
+          }
         )
 
         if (verbosityLevel >= 2) {
@@ -1236,7 +1269,9 @@ object Tasks {
             configs
           )
 
-          val projCache = res.values.foldLeft(Map.empty[ModuleVersion, Project])(_ ++ _.projectCache.mapValues(_._2))
+          val projCache = res.values.foldLeft(Map.empty[ModuleVersion, Project])(
+            _ ++ _.projectCache.mapValues(_._2)
+          )
           val repr = Print.dependenciesUnknownConfigs(finalDeps.toVector, projCache)
           log.info(repr.split('\n').map("  " + _).mkString("\n"))
         }
@@ -1246,8 +1281,7 @@ object Tasks {
             artifact -> file
         }
 
-        val artifactErrors = artifactFilesOrErrors0
-          .toVector
+        val artifactErrors = artifactFilesOrErrors0.toVector
           .collect {
             case (a, -\/(err)) if !a.isOptional || !err.notFound =>
               a -> err
@@ -1320,8 +1354,7 @@ object Tasks {
           val sbv = scalaBinaryVersion.value
           val cm = coursierSbtClassifiersModule.value
           FromSbt.sbtClassifiersProject(cm, sv, sbv)
-        }
-      else
+        } else
         Def.task {
           val proj = coursierProject.value
           val publications = coursierPublications.value
@@ -1341,8 +1374,7 @@ object Tasks {
           Def.task {
             val classifiersRes = coursierSbtClassifiersResolution.value
             Map(currentProject.configurations.keySet -> classifiersRes)
-          }
-        else
+          } else
           Def.task(coursierResolutions.value)
 
       Def.task {
@@ -1353,11 +1385,13 @@ object Tasks {
           if subGraphConfigs.exists(includedConfigs)
         } {
 
-          val dependencies0 = currentProject.dependencies.collect {
-            case (cfg, dep) if includedConfigs(cfg) && subGraphConfigs(cfg) => dep
-          }.sortBy { dep =>
-            (dep.module.organization, dep.module.name, dep.version)
-          }
+          val dependencies0 = currentProject.dependencies
+            .collect {
+              case (cfg, dep) if includedConfigs(cfg) && subGraphConfigs(cfg) => dep
+            }
+            .sortBy { dep =>
+              (dep.module.organization, dep.module.name, dep.version)
+            }
 
           val subRes = res.subset(dependencies0.toSet)
 

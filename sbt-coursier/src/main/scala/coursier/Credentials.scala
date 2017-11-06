@@ -27,15 +27,15 @@ object Credentials {
       p
     }
 
-    private def findKey(keys: Seq[String]) = keys
-      .iterator
-      .map(props.getProperty)
-      .filter(_ != null)
-      .toStream
-      .headOption
-      .getOrElse {
-        throw new NoSuchElementException(s"${keys.head} key in $file")
-      }
+    private def findKey(keys: Seq[String]) =
+      keys.iterator
+        .map(props.getProperty)
+        .filter(_ != null)
+        .toStream
+        .headOption
+        .getOrElse {
+          throw new NoSuchElementException(s"${keys.head} key in $file")
+        }
 
     lazy val user: String = findKey(FromFile.fileUserKeys)
     lazy val password: String = findKey(FromFile.filePasswordKeys)
@@ -46,7 +46,6 @@ object Credentials {
     private val fileUserKeys = Seq("user", "user.name", "username")
     private val filePasswordKeys = Seq("password", "pwd", "pass", "passwd")
   }
-
 
   def apply(user: String, password: String): Credentials =
     Direct(user, password)

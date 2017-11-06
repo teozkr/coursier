@@ -33,7 +33,9 @@ object SbtConfig {
       else if (version.startsWith("1.0."))
         "2.12.1"
       else
-        throw new Exception(s"Don't know what Scala version should be used for sbt version '$version'")
+        throw new Exception(
+          s"Don't know what Scala version should be used for sbt version '$version'"
+        )
 
     val org =
       if (config.hasPath("sbt.organization"))
@@ -59,7 +61,7 @@ object SbtConfig {
     val rawPlugins =
       if (config.hasPath("plugins"))
         config.getStringList("plugins").asScala
-     else
+      else
         Nil
 
     val (pluginErrors, pluginsModuleVersions) = Parse.moduleVersions(rawPlugins, scalaVersion)

@@ -1,4 +1,3 @@
-
 import argonaut._
 
 object Foo {

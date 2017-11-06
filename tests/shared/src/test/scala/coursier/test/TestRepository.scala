@@ -20,10 +20,13 @@ final case class TestRepository(projects: Map[(Module, String), Project]) extend
     module: Module,
     version: String,
     fetch: Fetch.Content[F]
-  )(implicit
+  )(
+    implicit
     F: Monad[F]
   ) =
-    EitherT(F.point(
-      projects.get((module, version)).map((source, _)).toRightDisjunction("Not found")
-    ))
+    EitherT(
+      F.point(
+        projects.get((module, version)).map((source, _)).toRightDisjunction("Not found")
+      )
+    )
 }

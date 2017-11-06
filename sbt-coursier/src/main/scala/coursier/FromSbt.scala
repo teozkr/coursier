@@ -15,7 +15,7 @@ object FromSbt {
 
   def sbtModuleIdName(
     moduleId: ModuleID,
-    scalaVersion: => String,
+    scalaVersion:       => String,
     scalaBinaryVersion: => String
   ): String =
     sbtCrossVersionName(moduleId.name, moduleId.crossVersion, scalaVersion, scalaBinaryVersion)
@@ -23,18 +23,22 @@ object FromSbt {
   def sbtCrossVersionName(
     name: String,
     crossVersion: CrossVersion,
-    scalaVersion: => String,
+    scalaVersion:       => String,
     scalaBinaryVersion: => String
   ): String =
     CrossVersion(crossVersion, scalaVersion, scalaBinaryVersion)
       .fold(name)(_(name))
 
   def attributes(attr: Map[String, String]): Map[String, String] =
-    attr.map { case (k, v) =>
-      k.stripPrefix("e:") -> v
-    }.filter { case (k, _) =>
-      !k.startsWith(SbtPomExtraProperties.POM_INFO_KEY_PREFIX)
-    }
+    attr
+      .map {
+        case (k, v) =>
+          k.stripPrefix("e:") -> v
+      }
+      .filter {
+        case (k, _) =>
+          !k.startsWith(SbtPomExtraProperties.POM_INFO_KEY_PREFIX)
+      }
 
   def moduleVersion(
     module: ModuleID,
@@ -44,7 +48,8 @@ object FromSbt {
 
     val fullName = sbtModuleIdName(module, scalaVersion, scalaBinaryVersion)
 
-    val module0 = Module(module.organization, fullName, FromSbt.attributes(module.extraDependencyAttributes))
+    val module0 =
+      Module(module.organization, fullName, FromSbt.attributes(module.extraDependencyAttributes))
     val version = module.revision
 
     (module0, version)
@@ -163,7 +168,7 @@ object FromSbt {
 
   private def mavenCompatibleBaseOpt(patterns: sbt.Patterns): Option[String] =
     if (patterns.isMavenCompatible) {
-      val baseIvyPattern = patterns.ivyPatterns.head.takeWhile(c => c != '[' && c != '(')
+      val baseIvyPattern = patterns.ivyPatterns.head.takeWhile(c      => c != '[' && c != '(')
       val baseArtifactPattern = patterns.ivyPatterns.head.takeWhile(c => c != '[' && c != '(')
 
       if (baseIvyPattern == baseArtifactPattern)
@@ -191,9 +196,9 @@ object FromSbt {
       case e: MalformedURLException =>
         log.warn(
           "Error parsing Maven repository base " +
-          root +
-          Option(e.getMessage).fold("")(" (" + _ + ")") +
-          ", ignoring it"
+            root +
+            Option(e.getMessage).fold("")(" (" + _ + ")") +
+            ", ignoring it"
         )
 
         None
@@ -210,14 +215,12 @@ object FromSbt {
         mavenRepositoryOpt(r.root, log, authentication)
 
       case r: sbt.FileRepository
-        if r.patterns.ivyPatterns.lengthCompare(1) == 0 &&
-          r.patterns.artifactPatterns.lengthCompare(1) == 0 =>
-
+          if r.patterns.ivyPatterns.lengthCompare(1) == 0 &&
+            r.patterns.artifactPatterns.lengthCompare(1) == 0 =>
         val mavenCompatibleBaseOpt0 = mavenCompatibleBaseOpt(r.patterns)
 
         mavenCompatibleBaseOpt0 match {
           case None =>
-
             val repo = IvyRepository.parse(
               "file://" + r.patterns.artifactPatterns.head,
               metadataPatternOpt = Some("file://" + r.patterns.ivyPatterns.head),
@@ -241,14 +244,12 @@ object FromSbt {
         }
 
       case r: sbt.URLRepository
-        if r.patterns.ivyPatterns.lengthCompare(1) == 0 &&
-          r.patterns.artifactPatterns.lengthCompare(1) == 0 =>
-
+          if r.patterns.ivyPatterns.lengthCompare(1) == 0 &&
+            r.patterns.artifactPatterns.lengthCompare(1) == 0 =>
         val mavenCompatibleBaseOpt0 = mavenCompatibleBaseOpt(r.patterns)
 
         mavenCompatibleBaseOpt0 match {
           case None =>
-
             val repo = IvyRepository.parse(
               r.patterns.artifactPatterns.head,
               metadataPatternOpt = Some(r.patterns.ivyPatterns.head),
@@ -271,7 +272,8 @@ object FromSbt {
             mavenRepositoryOpt(mavenCompatibleBase, log, authentication)
         }
 
-      case raw: sbt.RawRepository if raw.name == "inter-project" => // sbt.RawRepository.equals just compares names anyway
+      case raw: sbt.RawRepository
+          if raw.name == "inter-project" => // sbt.RawRepository.equals just compares names anyway
         None
 
       case other =>

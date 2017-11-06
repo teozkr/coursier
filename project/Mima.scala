@@ -1,4 +1,3 @@
-
 import sbt._
 import sbt.Keys._
 
@@ -27,7 +26,6 @@ object Mima {
     "" // binary compatibility versions
   )
 
-
   lazy val previousArtifacts = Seq(
     mimaPreviousArtifacts := {
       binaryCompatibilityVersions.collect {
@@ -49,7 +47,9 @@ object Mima {
         // made private so that the shaded fastparse stuff doesn't leak
         ProblemFilters.exclude[DirectMissingMethodProblem]("coursier.ivy.PropertiesPattern.parser"),
         // corresponds to a default value of a private method, not sure why this error is raised
-        ProblemFilters.exclude[IncompatibleResultTypeProblem]("coursier.maven.Pom.coursier$maven$Pom$$module$default$2")
+        ProblemFilters.exclude[IncompatibleResultTypeProblem](
+          "coursier.maven.Pom.coursier$maven$Pom$$module$default$2"
+        )
       )
     }
   }

@@ -6,7 +6,7 @@ object WritePom {
 
   def project(proj: Project, packaging: Option[String]) = {
 
-    def dependencyNode(config: String, dep: Dependency) = {
+    def dependencyNode(config: String, dep: Dependency) =
       <dependency>
         <groupId>{dep.module.organization}</groupId>
         <artifactId>{dep.module.name}</artifactId>
@@ -23,8 +23,7 @@ object WritePom {
           Seq(<scope>{config}</scope>)
         }
       </dependency>
-    }
-
+    
     <project>
       // parent
       <groupId>{proj.module.organization}</groupId>

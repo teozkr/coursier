@@ -40,8 +40,7 @@ package object test {
       underlying.copy(filter = None)
     def clearProjectProperties: Resolution =
       underlying.copy(
-        projectCache = underlying
-          .projectCache
+        projectCache = underlying.projectCache
           .mapValues {
             case (s, p) =>
               (s, p.copy(properties = p.properties.filter { case (k, _) => !projectProperties(k) }))

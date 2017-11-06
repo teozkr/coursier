@@ -20,10 +20,12 @@ object Main extends App {
 
   buildCp(Thread.currentThread().getContextClassLoader)
 
-  val sbtBase = new File(sys.props.getOrElse(
-    "sbt.global.base",
-    sys.props("user.home") + "/.sbt"
-  ))
+  val sbtBase = new File(
+    sys.props.getOrElse(
+      "sbt.global.base",
+      sys.props("user.home") + "/.sbt"
+    )
+  )
   val prefix = new File(sbtBase, "boot").getAbsolutePath
 
   def fromBootAndUnique(name: String): Unit = {

@@ -14,8 +14,7 @@ import scala.util.Try
 
 object Native {
 
-  def discover(binaryName: String,
-               binaryVersions: Seq[(String, String)]): File = {
+  def discover(binaryName: String, binaryVersions: Seq[(String, String)]): File = {
     val docSetup =
       "http://www.scala-native.org/en/latest/user/setup.html"
 
@@ -37,7 +36,8 @@ object Native {
           .headOption
           .getOrElse {
             sys.error(
-              s"no ${binaryNames.mkString(", ")} found in $$PATH. Install clang ($docSetup)")
+              s"no ${binaryNames.mkString(", ")} found in $$PATH. Install clang ($docSetup)"
+            )
           }
     }
   }
@@ -51,21 +51,20 @@ object Native {
       case none                => None
     }
 
-    def definesBuiltIn(
-                        pathToClangBinary: Option[String]): Option[Seq[String]] = {
+    def definesBuiltIn(pathToClangBinary: Option[String]): Option[Seq[String]] = {
       def commandLineToListBuiltInDefines(clang: String) =
         Seq("echo", "") #| Seq(clang, "-dM", "-E", "-")
-      def splitIntoLines(s: String)      = s.split(f"%n")
+      def splitIntoLines(s: String) = s.split(f"%n")
       def removeLeadingDefine(s: String) = s.substring(s.indexOf(' ') + 1)
 
       for {
         clang <- pathToClangBinary
         output = commandLineToListBuiltInDefines(clang).!!
-        lines  = splitIntoLines(output)
-      } yield lines map removeLeadingDefine
+        lines = splitIntoLines(output)
+      } yield lines.map(removeLeadingDefine)
     }
 
-    val clang                = maybeFile(pathToClangBinary)
+    val clang = maybeFile(pathToClangBinary)
     val defines: Seq[String] = definesBuiltIn(clang).to[Seq].flatten
     val clangIsRecentEnough =
       defines.contains("__DECIMAL_DIG__ __LDBL_DECIMAL_DIG__")
@@ -74,7 +73,8 @@ object Native {
       sys.error(
         s"No recent installation of clang found " +
           s"at $pathToClangBinary.\nSee http://scala-native.readthedocs.io" +
-          s"/en/latest/user/setup.html for details.")
+          s"/en/latest/user/setup.html for details."
+      )
     }
   }
 
@@ -107,10 +107,9 @@ object Native {
     }
   }
 
-  sealed abstract class GarbageCollector(val name: String,
-                                         val links: Seq[String] = Nil)
+  sealed abstract class GarbageCollector(val name: String, val links: Seq[String] = Nil)
   object GarbageCollector {
-    object None  extends GarbageCollector("none")
+    object None extends GarbageCollector("none")
     object Boehm extends GarbageCollector("boehm", Seq("gc"))
     object Immix extends GarbageCollector("immix")
   }
@@ -204,7 +203,6 @@ object Native {
     }
   }
 
-
   def create(
     mainClass: String,
     files: Seq[File],
@@ -230,7 +228,7 @@ object Native {
 
     val nativeTarget = {
       // Use non-standard extension to not include the ll file when linking (#639)
-      val targetc  = new File(wd, "target/c.probe")
+      val targetc = new File(wd, "target/c.probe")
       val targetll = new File(wd, "target/ll.probe")
       val compilec =
         Seq(
@@ -251,7 +249,8 @@ object Native {
       Console.err.println(compilec)
       val exit = sys.process.Process(compilec, wd).!
       if (exit == 0)
-        scala.io.Source.fromFile(targetll)(scala.io.Codec.UTF8)
+        scala.io.Source
+          .fromFile(targetll)(scala.io.Codec.UTF8)
           .getLines()
           .collectFirst {
             case line if line.startsWith("target triple") =>
@@ -287,10 +286,8 @@ object Native {
     val linkingReporter =
       tools.LinkerReporter.empty
 
-
     log("Linking")
     val linkerResult = tools.link(config, driver, linkingReporter)
-
 
     if (linkerResult.unresolved.isEmpty) {
       val classCount = linkerResult.defns.count {
@@ -308,11 +305,11 @@ object Native {
       sys.error("unable to link")
     }
 
-
     val optimizeReporter = tools.OptimizerReporter.empty
 
     log("Optimizing")
-    val optimized = tools.optimize(config, driver, linkerResult.defns, linkerResult.dyns, optimizeReporter)
+    val optimized =
+      tools.optimize(config, driver, linkerResult.defns, linkerResult.dyns, optimizeReporter)
 
     log("Generating intermediate code")
     tools.codegen(config, optimized)
@@ -336,18 +333,14 @@ object Native {
         })
     }
 
-    val apppaths = generated
-      .par
-      .map { ll =>
-        val apppath = ll.getAbsolutePath
-        val outpath = apppath + ".o"
-        val compile = Seq(clangpp.getAbsolutePath, "-c", apppath, "-o", outpath) ++ compileOpts
-        running(compile)
-        Process(compile, wd).!
-        new File(outpath)
-      }
-      .seq
-
+    val apppaths = generated.par.map { ll =>
+      val apppath = ll.getAbsolutePath
+      val outpath = apppath + ".o"
+      val compile = Seq(clangpp.getAbsolutePath, "-c", apppath, "-o", outpath) ++ compileOpts
+      running(compile)
+      Process(compile, wd).!
+      new File(outpath)
+    }.seq
 
     // this unpacks extra source files
     val nativelib = {
@@ -361,7 +354,7 @@ object Native {
               new File(p)
           }
           .get
-      val jarhash     = Native.hash(jar).toSeq
+      val jarhash = Native.hash(jar).toSeq
       val jarhashfile = new File(lib, "jarhash")
       val unpacked =
         lib.exists &&
@@ -377,9 +370,9 @@ object Native {
       lib
     }
 
-    val cpaths   = (wd ** "*.c").map(_.getAbsolutePath)
+    val cpaths = (wd ** "*.c").map(_.getAbsolutePath)
     val cpppaths = (wd ** "*.cpp").map(_.getAbsolutePath)
-    val paths    = cpaths ++ cpppaths
+    val paths = cpaths ++ cpppaths
 
     val gc = "boehm"
 
@@ -405,28 +398,24 @@ object Native {
 
     val opts = nativeCompileOptions ++ Seq("-O2")
 
-    paths
-      .par
-      .map { path =>
-        val opath = path + ".o"
-        if (Native.include(linkerResult, gc, path) && !new File(opath).exists()) {
-          val isCpp    = path.endsWith(".cpp")
-          val compiler = (if (isCpp) clangpp else clang).getAbsolutePath
-          val flags    = (if (isCpp) Seq("-std=c++11") else Seq()) ++ opts
-          val compilec = Seq(compiler) ++ flags ++ Seq("-c", path, "-o", opath)
+    paths.par.map { path =>
+      val opath = path + ".o"
+      if (Native.include(linkerResult, gc, path) && !new File(opath).exists()) {
+        val isCpp = path.endsWith(".cpp")
+        val compiler = (if (isCpp) clangpp else clang).getAbsolutePath
+        val flags = (if (isCpp) Seq("-std=c++11") else Seq()) ++ opts
+        val compilec = Seq(compiler) ++ flags ++ Seq("-c", path, "-o", opath)
 
-          running(compilec)
-          val result = Process(compilec, wd).!
-          if (result != 0)
-            sys.error("Failed to compile native library runtime code.")
-          result
-        }
+        running(compilec)
+        val result = Process(compilec, wd).!
+        if (result != 0)
+          sys.error("Failed to compile native library runtime code.")
+        result
       }
-      .seq
-
+    }.seq
 
     val links = {
-      val os   = Option(sys.props("os.name")).getOrElse("")
+      val os = Option(sys.props("os.name")).getOrElse("")
       val arch = nativeTarget.split("-").head
       // we need re2 to link the re2 c wrapper (cre2.h)
       val librt = os match {
@@ -451,12 +440,12 @@ object Native {
       libs
     }
 
-    val linkopts  = links.map("-l" + _) ++ nativeLinkingOptions
+    val linkopts = links.map("-l" + _) ++ nativeLinkingOptions
     val targetopt = Seq("-target", nativeTarget)
-    val flags     = Seq("-o", output0.getAbsolutePath) ++ linkopts ++ targetopt
-    val opaths    = (nativelib ** "*.o").map(_.getAbsolutePath)
-    val paths0    = apppaths.map(_.getAbsolutePath) ++ opaths
-    val compile   = clangpp.getAbsolutePath +: (flags ++ paths0)
+    val flags = Seq("-o", output0.getAbsolutePath) ++ linkopts ++ targetopt
+    val opaths = (nativelib ** "*.o").map(_.getAbsolutePath)
+    val paths0 = apppaths.map(_.getAbsolutePath) ++ opaths
+    val compile = clangpp.getAbsolutePath +: (flags ++ paths0)
 
     log("Linking native code")
     running(compile)

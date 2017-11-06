@@ -27,9 +27,7 @@ object Orders {
       helper(Set(config), Set.empty)
     }
 
-    configurations
-      .keys
-      .toList
+    configurations.keys.toList
       .map(config => config -> (allParents(config) - config))
       .toMap
   }
@@ -66,20 +64,20 @@ object Orders {
     }
 
   /**
-   * Exclusions partial order.
-   *
-   * x <= y iff all that x excludes is also excluded by y.
-   * x and y not related iff x excludes some elements not excluded by y AND
-   *                         y excludes some elements not excluded by x.
-   *
-   * In particular, no exclusions <= anything <= Set(("*", "*"))
-   */
+    * Exclusions partial order.
+    *
+    * x <= y iff all that x excludes is also excluded by y.
+    * x and y not related iff x excludes some elements not excluded by y AND
+    *                         y excludes some elements not excluded by x.
+    *
+    * In particular, no exclusions <= anything <= Set(("*", "*"))
+    */
   val exclusionsPartialOrder: PartialOrdering[Set[(String, String)]] =
     new PartialOrdering[Set[(String, String)]] {
       def boolCmp(a: Boolean, b: Boolean) = (a, b) match {
-        case (true, true) => Some(0)
-        case (true, false) => Some(1)
-        case (false, true) => Some(-1)
+        case (true, true)   => Some(0)
+        case (true, false)  => Some(1)
+        case (false, true)  => Some(-1)
         case (false, false) => None
       }
 
@@ -89,9 +87,10 @@ object Orders {
 
         boolCmp(xAll, yAll).orElse {
           def filtered(e: Set[(String, String)]) =
-            e.filter{case (org, name) =>
-              !xExcludeByOrg1(org) && !yExcludeByOrg1(org) &&
-                !xExcludeByName1(name) && !yExcludeByName1(name)
+            e.filter {
+              case (org, name) =>
+                !xExcludeByOrg1(org) && !yExcludeByOrg1(org) &&
+                  !xExcludeByName1(name) && !yExcludeByName1(name)
             }
 
           def removeIntersection[T](a: Set[T], b: Set[T]) =
@@ -138,9 +137,9 @@ object Orders {
     }
 
   /**
-   * Assume all dependencies have same `module`, `version`, and `artifact`; see `minDependencies`
-   * if they don't.
-   */
+    * Assume all dependencies have same `module`, `version`, and `artifact`; see `minDependencies`
+    * if they don't.
+    */
   def minDependenciesUnsafe(
     dependencies: Set[Dependency],
     configs: Map[String, Seq[String]]
@@ -149,7 +148,13 @@ object Orders {
     val groupedDependencies = dependencies
       .map(fallbackConfigIfNecessary(_, availableConfigs))
       .groupBy(dep => (dep.optional, dep.configuration))
-      .mapValues(deps => deps.head.copy(exclusions = deps.foldLeft(Exclusions.one)((acc, dep) => Exclusions.meet(acc, dep.exclusions))))
+      .mapValues(
+        deps =>
+          deps.head.copy(
+            exclusions =
+              deps.foldLeft(Exclusions.one)((acc, dep) => Exclusions.meet(acc, dep.exclusions))
+        )
+      )
       .toList
 
     val remove =
@@ -157,10 +162,10 @@ object Orders {
         List(((xOpt, xScope), xDep), ((yOpt, yScope), yDep)) <- groupedDependencies.combinations(2)
         optCmp <- optionalPartialOrder.tryCompare(xOpt, yOpt).iterator
         scopeCmp <- configurationPartialOrder(configs).tryCompare(xScope, yScope).iterator
-        if optCmp*scopeCmp >= 0
+        if optCmp * scopeCmp >= 0
         exclCmp <- exclusionsPartialOrder.tryCompare(xDep.exclusions, yDep.exclusions).iterator
-        if optCmp*exclCmp >= 0
-        if scopeCmp*exclCmp >= 0
+        if optCmp * exclCmp >= 0
+        if scopeCmp * exclCmp >= 0
         xIsMin = optCmp < 0 || scopeCmp < 0 || exclCmp < 0
         yIsMin = optCmp > 0 || scopeCmp > 0 || exclCmp > 0
         if xIsMin || yIsMin // should be always true, unless xDep == yDep, which shouldn't happen
@@ -170,19 +175,18 @@ object Orders {
   }
 
   /**
-   * Minified representation of `dependencies`.
-   *
-   * The returned set brings exactly the same things as `dependencies`, with no redundancy.
-   */
+    * Minified representation of `dependencies`.
+    *
+    * The returned set brings exactly the same things as `dependencies`, with no redundancy.
+    */
   def minDependencies(
     dependencies: Set[Dependency],
     configs: ((Module, String)) => Map[String, Seq[String]]
-  ): Set[Dependency] = {
+  ): Set[Dependency] =
     dependencies
       .groupBy(_.copy(configuration = "", exclusions = Set.empty, optional = false))
       .mapValues(deps => minDependenciesUnsafe(deps, configs(deps.head.moduleVersion)))
       .valuesIterator
       .fold(Set.empty)(_ ++ _)
-  }
 
 }

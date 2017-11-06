@@ -230,7 +230,6 @@ object ActivationTests extends TestSuite {
           assert(isActive)
         }
 
-
         'wrongExactVersion - {
           val activation = Activation(
             Nil,
@@ -242,7 +241,6 @@ object ActivationTests extends TestSuite {
 
           assert(!isActive)
         }
-
 
         'wrongExactVersionSeveral - {
           val activation = Activation(

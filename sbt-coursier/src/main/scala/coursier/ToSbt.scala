@@ -25,20 +25,24 @@ object ToSbt {
 
   val moduleId = caching[(Dependency, Map[String, String]), sbt.ModuleID] {
     case (dependency, extraProperties) =>
-      sbt.ModuleID(
-        dependency.module.organization,
-        dependency.module.name,
-        dependency.version
-      ).withConfigurations(
-        Some(dependency.configuration)
-      ).withExtraAttributes(
-        dependency.module.attributes ++ extraProperties
-      )
+      sbt
+        .ModuleID(
+          dependency.module.organization,
+          dependency.module.name,
+          dependency.version
+        )
+        .withConfigurations(
+          Some(dependency.configuration)
+        )
+        .withExtraAttributes(
+          dependency.module.attributes ++ extraProperties
+        )
   }
 
   val artifact = caching[(Module, Map[String, String], Artifact), sbt.Artifact] {
     case (module, extraProperties, artifact) =>
-      sbt.Artifact(module.name)
+      sbt
+        .Artifact(module.name)
         // FIXME Get these two from publications
         .withType(artifact.attributes.`type`)
         .withExtension(MavenSource.typeExtension(artifact.attributes.`type`))
@@ -52,56 +56,59 @@ object ToSbt {
         .withExtraAttributes(module.attributes ++ extraProperties)
   }
 
-  val moduleReport = caching[(Dependency, Seq[(Dependency, Project)], Project, Seq[(Artifact, Option[File])]), sbt.ModuleReport] {
+  val moduleReport = caching[
+    (Dependency, Seq[(Dependency, Project)], Project, Seq[(Artifact, Option[File])]),
+    sbt.ModuleReport
+  ] {
     case (dependency, dependees, project, artifacts) =>
+      val sbtArtifacts = artifacts.collect {
+        case (artifact, Some(file)) =>
+          (ToSbt.artifact(dependency.module, project.properties.toMap, artifact), file)
+      }
+      val sbtMissingArtifacts = artifacts.collect {
+        case (artifact, None) =>
+          ToSbt.artifact(dependency.module, project.properties.toMap, artifact)
+      }
 
-    val sbtArtifacts = artifacts.collect {
-      case (artifact, Some(file)) =>
-        (ToSbt.artifact(dependency.module, project.properties.toMap, artifact), file)
-    }
-    val sbtMissingArtifacts = artifacts.collect {
-      case (artifact, None) =>
-        ToSbt.artifact(dependency.module, project.properties.toMap, artifact)
-    }
+      val publicationDate = project.info.publication.map { dt =>
+        new GregorianCalendar(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+      }
 
-    val publicationDate = project.info.publication.map { dt =>
-      new GregorianCalendar(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
-    }
+      val callers = dependees.map {
+        case (dependee, dependeeProj) =>
+          sbt.Caller(
+            ToSbt.moduleId(dependee, dependeeProj.properties.toMap),
+            dependeeProj.configurations.keys.toVector.map(ConfigRef(_)),
+            dependee.module.attributes ++ dependeeProj.properties,
+            // FIXME Set better values here
+            isForceDependency = false,
+            isChangingDependency = false,
+            isTransitiveDependency = false,
+            isDirectlyForceDependency = false
+          )
+      }
 
-    val callers = dependees.map {
-      case (dependee, dependeeProj) =>
-        sbt.Caller(
-          ToSbt.moduleId(dependee, dependeeProj.properties.toMap),
-          dependeeProj.configurations.keys.toVector.map(ConfigRef(_)),
-          dependee.module.attributes ++ dependeeProj.properties,
-          // FIXME Set better values here
-          isForceDependency = false,
-          isChangingDependency = false,
-          isTransitiveDependency = false,
-          isDirectlyForceDependency = false
+      sbt
+        .ModuleReport(
+          ToSbt.moduleId(dependency, project.properties.toMap),
+          sbtArtifacts.toVector,
+          sbtMissingArtifacts.toVector
         )
-    }
-
-    sbt.ModuleReport(
-      ToSbt.moduleId(dependency, project.properties.toMap),
-      sbtArtifacts.toVector,
-      sbtMissingArtifacts.toVector
-    )
-      // .withStatus(None)
-      .withPublicationDate(publicationDate)
-      // .withResolver(None)
-      // .withArtifactResolver(None)
-      // .withEvicted(false)
-      // .withEvictedData(None)
-      // .withEvictedReason(None)
-      // .withProblem(None)
-      .withHomepage(Some(project.info.homePage).filter(_.nonEmpty))
-      .withExtraAttributes(dependency.module.attributes ++ project.properties)
-      // .withIsDefault(None)
-      // .withBranch(None)
-      .withConfigurations(project.configurations.keys.toVector.map(ConfigRef(_)))
-      .withLicenses(project.info.licenses.toVector)
-      .withCallers(callers.toVector)
+        // .withStatus(None)
+        .withPublicationDate(publicationDate)
+        // .withResolver(None)
+        // .withArtifactResolver(None)
+        // .withEvicted(false)
+        // .withEvictedData(None)
+        // .withEvictedReason(None)
+        // .withProblem(None)
+        .withHomepage(Some(project.info.homePage).filter(_.nonEmpty))
+        .withExtraAttributes(dependency.module.attributes ++ project.properties)
+        // .withIsDefault(None)
+        // .withBranch(None)
+        .withConfigurations(project.configurations.keys.toVector.map(ConfigRef(_)))
+        .withLicenses(project.info.licenses.toVector)
+        .withCallers(callers.toVector)
   }
 
   private def grouped[K, V](map: Seq[(K, V)]): Map[K, Seq[V]] =
@@ -120,7 +127,7 @@ object ToSbt {
   ) = {
     val depArtifacts1 =
       classifiersOpt match {
-        case None => res.dependencyArtifacts(withOptional = true)
+        case None     => res.dependencyArtifacts(withOptional = true)
         case Some(cl) => res.dependencyClassifiersArtifacts(cl)
       }
 
@@ -141,8 +148,7 @@ object ToSbt {
           depArtifacts0.flatMap {
             case (dep, a) =>
               Seq(dep -> a) ++ a.extra.get("sig").toSeq.map(dep -> _)
-          }
-        else {
+          } else {
           for ((_, a) <- notFound)
             log.error(s"No signature found for ${a.url}")
           sys.error(s"${notFound.length} signature(s) not found")
@@ -159,10 +165,10 @@ object ToSbt {
     def clean(dep: Dependency): Dependency =
       dep.copy(configuration = "", exclusions = Set.empty, optional = false)
 
-    val reverseDependencies = res.reverseDependencies
-      .toVector
-      .map { case (k, v) =>
-        clean(k) -> v.map(clean)
+    val reverseDependencies = res.reverseDependencies.toVector
+      .map {
+        case (k, v) =>
+          clean(k) -> v.map(clean)
       }
       .groupBy { case (k, v) => k }
       .mapValues { v =>
@@ -230,8 +236,8 @@ object ToSbt {
             val mod = ToSbt.moduleId(dep, proj.properties.toMap)
             val (main, other) = reports.partition { r =>
               r.module.organization == mod.organization &&
-                r.module.name == mod.name &&
-                r.module.crossVersion == mod.crossVersion
+              r.module.name == mod.name &&
+              r.module.crossVersion == mod.crossVersion
             }
             main.toVector ++ other.toVector
           } else

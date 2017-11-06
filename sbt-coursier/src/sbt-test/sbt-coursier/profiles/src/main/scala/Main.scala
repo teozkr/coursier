@@ -4,7 +4,8 @@ import java.nio.file.Files
 object Main extends App {
   val p = new java.util.Properties
   p.load(
-    Thread.currentThread()
+    Thread
+      .currentThread()
       .getContextClassLoader
       .getResource("common-version-info.properties")
       .openStream()

@@ -33,12 +33,10 @@ object FallbackDependenciesRepository {
           conn.setRequestMethod("HEAD")
           conn.getInputStream.close()
           Some(true)
-        }
-        catch {
+        } catch {
           case _: FileNotFoundException => Some(false)
           case _: IOException           => None // error other than not found
-        }
-        finally {
+        } finally {
           if (conn != null)
             coursier.Cache.closeConn(conn)
         }
@@ -58,11 +56,9 @@ object FallbackDependenciesRepository {
         // NOT setting request type to HEAD here.
         conn.getInputStream.close()
         true
-      }
-      catch {
+      } catch {
         case _: IOException => false
-      }
-      finally {
+      } finally {
         if (conn != null)
           coursier.Cache.closeConn(conn)
       }
@@ -100,7 +96,8 @@ final case class FallbackDependenciesRepository(
     module: Module,
     version: String,
     fetch: Fetch.Content[F]
-  )(implicit
+  )(
+    implicit
     F: Monad[F]
   ): EitherT[F, String, (Artifact.Source, Project)] = {
 
@@ -108,7 +105,6 @@ final case class FallbackDependenciesRepository(
       .get((module, version))
       .fold("No fallback URL found".left[(Artifact.Source, Project)]) {
         case (url, _) =>
-
           val urlStr = url.toExternalForm
           val idx = urlStr.lastIndexOf('/')
 

@@ -8,11 +8,12 @@ object Fetch {
 
   type Content[F[_]] = Artifact => EitherT[F, String, String]
 
-
-  type MD = Seq[(
-    (Module, String),
-    Seq[String] \/ (Artifact.Source, Project)
-  )]
+  type MD = Seq[
+    (
+      (Module, String),
+      Seq[String] \/ (Artifact.Source, Project)
+    )
+  ]
 
   type Metadata[F[_]] = Seq[(Module, String)] => F[MD]
 
@@ -32,7 +33,8 @@ object Fetch {
     module: Module,
     version: String,
     fetch: Content[F]
-  )(implicit
+  )(
+    implicit
     F: Monad[F]
   ): EitherT[F, Seq[String], (Artifact.Source, Project)] = {
 
@@ -56,21 +58,20 @@ object Fetch {
     repositories: Seq[core.Repository],
     fetch: Content[F],
     extra: Content[F]*
-  )(implicit
+  )(
+    implicit
     F: Nondeterminism[F]
-  ): Metadata[F] = {
-
-    modVers =>
-      F.map(
-        F.gatherUnordered(
-          modVers.map { case (module, version) =>
+  ): Metadata[F] = { modVers =>
+    F.map(
+      F.gatherUnordered(
+        modVers.map {
+          case (module, version) =>
             def get(fetch: Content[F]) =
               find(repositories, module, version, fetch)
-            F.map((get(fetch) /: extra)(_ orElse get(_))
-              .run)((module, version) -> _)
-          }
-        )
-      )(_.toSeq)
+            F.map((get(fetch) /: extra)(_.orElse(get(_))).run)((module, version) -> _)
+        }
+      )
+    )(_.toSeq)
   }
 
 }

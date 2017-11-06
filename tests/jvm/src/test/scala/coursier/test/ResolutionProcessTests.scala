@@ -46,13 +46,16 @@ object ResolutionProcessTests extends TestSuite {
           case _ => sys.error(s"Cannot happen ($modVers)")
         }
 
-        val res = ResolutionProcess.fetchAll(modVers, fetch)
+        val res = ResolutionProcess
+          .fetchAll(modVers, fetch)
           .timed(1.second)
           .attempt
           .unsafePerformSync
 
         // must have timed out
-        assert(res.swap.exists[Throwable] { case _: java.util.concurrent.TimeoutException => true; case _ => false })
+        assert(res.swap.exists[Throwable] {
+          case _: java.util.concurrent.TimeoutException => true; case _ => false
+        })
 
         val called0 = called.asScala.iterator.map(_._1).toSet
         val expectedCalled = (0 to extra)

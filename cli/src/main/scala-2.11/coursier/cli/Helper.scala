@@ -9,13 +9,13 @@ import java.util.concurrent.Executors
 import coursier.cli.scaladex.Scaladex
 import coursier.extra.Typelevel
 import coursier.ivy.IvyRepository
-import coursier.util.{Print, Parse}
+import coursier.util.{Parse, Print}
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.util.Try
 
-import scalaz.{Failure, Nondeterminism, Success, \/-, -\/}
+import scalaz.{-\/, \/-, Failure, Nondeterminism, Success}
 import scalaz.concurrent.{Strategy, Task}
 import scalaz.std.list._
 
@@ -107,7 +107,7 @@ class Helper(
         case Success(cp) => cp
         case Failure(errors) =>
           prematureExit(
-            s"Error parsing modes:\n${errors.list.toList.map("  "+_).mkString("\n")}"
+            s"Error parsing modes:\n${errors.list.toList.map("  " + _).mkString("\n")}"
           )
       }
 
@@ -133,18 +133,17 @@ class Helper(
   }
 
   val repositoriesValidation = CacheParse.repositories(common.repository).map { repos0 =>
-
     var repos = (if (common.noDefault) Nil else defaultRepositories) ++ repos0
 
     repos = repos.map {
       case m: MavenRepository => m.copy(sbtAttrStub = common.sbtPluginHack)
-      case other => other
+      case other              => other
     }
 
     if (common.dropInfoAttr)
       repos = repos.map {
         case m: IvyRepository => m.copy(dropInfoAttributes = true)
-        case other => other
+        case other            => other
       }
 
     repos
@@ -152,16 +151,14 @@ class Helper(
 
   val repositories = repositoriesValidation match {
     case Success(repos) =>
-      val sourceRepositories = sourceDirectories.map(dir =>
-        MavenRepository(dir.toURI.toString, changing = Some(true))
-      )
+      val sourceRepositories =
+        sourceDirectories.map(dir => MavenRepository(dir.toURI.toString, changing = Some(true)))
       sourceRepositories ++ repos
     case Failure(errors) =>
       prematureExit(
-        s"Error with repositories:\n${errors.list.toList.map("  "+_).mkString("\n")}"
+        s"Error with repositories:\n${errors.list.toList.map("  " + _).mkString("\n")}"
       )
   }
-
 
   val loggerFallbackMode =
     !progress && TermDisplay.defaultFallbackMode
@@ -175,48 +172,54 @@ class Helper(
     else {
       val logger =
         if (verbosityLevel >= 0)
-          Some(new TermDisplay(
-            new OutputStreamWriter(System.err),
-            fallbackMode = loggerFallbackMode
-          ))
+          Some(
+            new TermDisplay(
+              new OutputStreamWriter(System.err),
+              fallbackMode = loggerFallbackMode
+            )
+          )
         else
           None
 
-      val fetchs = cachePolicies.map(p =>
-        Cache.fetch(cache, p, checksums = Nil, logger = logger, pool = pool, ttl = ttl0)
+      val fetchs = cachePolicies.map(
+        p => Cache.fetch(cache, p, checksums = Nil, logger = logger, pool = pool, ttl = ttl0)
       )
 
       logger.foreach(_.init())
 
       val scaladex = Scaladex.cached(fetchs: _*)
 
-      val res = Nondeterminism[Task].gather(scaladexRawDependencies.map { s =>
-        val deps = scaladex.dependencies(
-          s,
-          scalaVersion,
-          if (verbosityLevel >= 2) Console.err.println(_) else _ => ()
-        )
+      val res = Nondeterminism[Task]
+        .gather(scaladexRawDependencies.map { s =>
+          val deps = scaladex.dependencies(
+            s,
+            scalaVersion,
+            if (verbosityLevel >= 2) Console.err.println(_) else _ => ()
+          )
 
-        deps.map { modVers =>
-          val m = modVers.groupBy(_._2)
-          if (m.size > 1) {
-            val (keptVer, modVers0) = m.map {
-              case (v, l) =>
-                val ver = coursier.core.Parse.version(v)
-                  .getOrElse(???) // FIXME
+          deps.map { modVers =>
+            val m = modVers.groupBy(_._2)
+            if (m.size > 1) {
+              val (keptVer, modVers0) = m
+                .map {
+                  case (v, l) =>
+                    val ver = coursier.core.Parse
+                      .version(v)
+                      .getOrElse(???) // FIXME
 
-              ver -> l
-            }
-            .maxBy(_._1)
+                    ver -> l
+                }
+                .maxBy(_._1)
 
-            if (verbosityLevel >= 1)
-              Console.err.println(s"Keeping version ${keptVer.repr}")
+              if (verbosityLevel >= 1)
+                Console.err.println(s"Keeping version ${keptVer.repr}")
 
-            modVers0
-          } else
-            modVers
-        }.run
-      }).unsafePerformSync
+              modVers0
+            } else
+              modVers
+          }.run
+        })
+        .unsafePerformSync
 
       logger.foreach(_.stop())
 
@@ -232,7 +235,6 @@ class Helper(
         .map { case (mod, ver) => (mod, ver, None) }
     }
 
-
   val (modVerCfgErrors, moduleVersionConfigs) =
     Parse.moduleVersionConfigs(otherRawDependencies, scalaVersion)
   val (intransitiveModVerCfgErrors, intransitiveModuleVersionConfigs) =
@@ -243,23 +245,21 @@ class Helper(
     scaladexModuleVersionConfigs ++ moduleVersionConfigs
 
   prematureExitIf(modVerCfgErrors.nonEmpty) {
-    s"Cannot parse dependencies:\n" + modVerCfgErrors.map("  "+_).mkString("\n")
+    s"Cannot parse dependencies:\n" + modVerCfgErrors.map("  " + _).mkString("\n")
   }
 
   prematureExitIf(intransitiveModVerCfgErrors.nonEmpty) {
     s"Cannot parse intransitive dependencies:\n" +
-      intransitiveModVerCfgErrors.map("  "+_).mkString("\n")
+      intransitiveModVerCfgErrors.map("  " + _).mkString("\n")
   }
-
 
   val (forceVersionErrors, forceVersions0) = Parse.moduleVersions(forceVersion, scalaVersion)
 
   prematureExitIf(forceVersionErrors.nonEmpty) {
-    s"Cannot parse forced versions:\n" + forceVersionErrors.map("  "+_).mkString("\n")
+    s"Cannot parse forced versions:\n" + forceVersionErrors.map("  " + _).mkString("\n")
   }
 
   val sourceRepositoryForceVersions = sourceDirectories.flatMap { base =>
-
     // FIXME Also done in the plugin module
 
     def pomDirComponents(f: File, components: Vector[String]): Stream[Vector[String]] =
@@ -271,9 +271,7 @@ class Helper(
       else
         Stream.empty
 
-    Option(base.listFiles())
-      .toVector
-      .flatten
+    Option(base.listFiles()).toVector.flatten
       .flatMap(pomDirComponents(_, Vector()))
       // at least 3 for org / name / version - the contrary should not happen, but who knows
       .filter(_.length >= 3)
@@ -292,7 +290,9 @@ class Helper(
       .map { case (mod, l) => mod -> l.map { case (_, version) => version } }
 
     for ((mod, forcedVersions) <- grouped if forcedVersions.distinct.lengthCompare(1) > 0)
-      errPrintln(s"Warning: version of $mod forced several times, using only the last one (${forcedVersions.last})")
+      errPrintln(
+        s"Warning: version of $mod forced several times, using only the last one (${forcedVersions.last})"
+      )
 
     grouped.map { case (mod, versions) => mod -> versions.last }
   }
@@ -301,18 +301,18 @@ class Helper(
 
   prematureExitIf(excludeErrors.nonEmpty) {
     s"Cannot parse excluded modules:\n" +
-    excludeErrors
-      .map("  " + _)
-      .mkString("\n")
+      excludeErrors
+        .map("  " + _)
+        .mkString("\n")
   }
 
   val (excludesNoAttr, excludesWithAttr) = excludes0.partition(_.attributes.isEmpty)
 
   prematureExitIf(excludesWithAttr.nonEmpty) {
     s"Excluded modules with attributes not supported:\n" +
-    excludesWithAttr
-      .map("  " + _)
-      .mkString("\n")
+      excludesWithAttr
+        .map("  " + _)
+        .mkString("\n")
   }
 
   val excludes = excludesNoAttr.map { mod =>
@@ -351,7 +351,7 @@ class Helper(
     else
       splitChecksumArgs.map {
         case none if none.toLowerCase == "none" => None
-        case sumType => Some(sumType)
+        case sumType                            => Some(sumType)
       }
   }
 
@@ -369,15 +369,17 @@ class Helper(
 
   val logger =
     if (verbosityLevel >= 0)
-      Some(new TermDisplay(
-        new OutputStreamWriter(System.err),
-        fallbackMode = loggerFallbackMode
-      ))
+      Some(
+        new TermDisplay(
+          new OutputStreamWriter(System.err),
+          fallbackMode = loggerFallbackMode
+        )
+      )
     else
       None
 
-  val fetchs = cachePolicies.map(p =>
-    Cache.fetch(cache, p, checksums = checksums, logger = logger, pool = pool, ttl = ttl0)
+  val fetchs = cachePolicies.map(
+    p => Cache.fetch(cache, p, checksums = checksums, logger = logger, pool = pool, ttl = ttl0)
   )
   val fetchQuiet = coursier.Fetch.from(
     repositories,
@@ -385,13 +387,12 @@ class Helper(
     fetchs.tail: _*
   )
   val fetch0 =
-    if (verbosityLevel >= 2) {
-      modVers: Seq[(Module, String)] =>
-        val print = Task {
-          errPrintln(s"Getting ${modVers.length} project definition(s)")
-        }
+    if (verbosityLevel >= 2) { modVers: Seq[(Module, String)] =>
+      val print = Task {
+        errPrintln(s"Getting ${modVers.length} project definition(s)")
+      }
 
-        print.flatMap(_ => fetchQuiet(modVers))
+      print.flatMap(_ => fetchQuiet(modVers))
     } else
       fetchQuiet
 
@@ -417,9 +418,8 @@ class Helper(
   val res =
     if (benchmark > 0) {
       class Counter(var value: Int = 0) {
-        def add(value: Int): Unit = {
+        def add(value: Int): Unit =
           this.value += value
-        }
       }
 
       def timed[T](name: String, counter: Counter, f: Task[T]): Task[T] =
@@ -443,14 +443,14 @@ class Helper(
               val iterationType = proc match {
                 case _: core.Missing  => "IO"
                 case _: core.Continue => "calculations"
-                case _ => ???
+                case _                => ???
               }
 
               timed(
                 s"Iteration ${iteration + 1} ($iterationType)",
                 counter,
-                proc.next(fetch0, fastForward = false)).flatMap(helper(_, counter, iteration + 1)
-              )
+                proc.next(fetch0, fastForward = false)
+              ).flatMap(helper(_, counter, iteration + 1))
           }
 
       def res = {
@@ -488,8 +488,7 @@ class Helper(
 
       def res(index: Int) = {
         val start = System.currentTimeMillis()
-        val res0 = startRes
-          .process
+        val res0 = startRes.process
           .run(fetch0, maxIterations)
           .unsafePerformSync
         val end = System.currentTimeMillis()
@@ -512,8 +511,7 @@ class Helper(
 
       result(0)
     } else
-      startRes
-        .process
+      startRes.process
         .run(fetch0, maxIterations)
         .unsafePerformSync
 
@@ -559,10 +557,12 @@ class Helper(
     anyError = true
     errPrintln(
       "\nError:\n" +
-      res.metadataErrors.map {
-        case ((module, version), errors) =>
-          s"  $module:$version\n${errors.map("    " + _.replace("\n", "    \n")).mkString("\n")}"
-      }.mkString("\n")
+        res.metadataErrors
+          .map {
+            case ((module, version), errors) =>
+              s"  $module:$version\n${errors.map("    " + _.replace("\n", "    \n")).mkString("\n")}"
+          }
+          .mkString("\n")
     )
   }
 
@@ -570,11 +570,11 @@ class Helper(
     anyError = true
     errPrintln(
       s"\nConflict:\n" +
-      Print.dependenciesUnknownConfigs(
-        res.conflicts.toVector,
-        projCache,
-        printExclusions = verbosityLevel >= 1
-      )
+        Print.dependenciesUnknownConfigs(
+          res.conflicts.toVector,
+          projCache,
+          printExclusions = verbosityLevel >= 1
+        )
     )
   }
 
@@ -594,10 +594,10 @@ class Helper(
 
     if (subset == null && verbosityLevel >= 1) {
       def isLocal(p: CachePolicy) = p match {
-        case CachePolicy.LocalOnly => true
-        case CachePolicy.LocalUpdate => true
+        case CachePolicy.LocalOnly           => true
+        case CachePolicy.LocalUpdate         => true
         case CachePolicy.LocalUpdateChanging => true
-        case _ => false
+        case _                               => false
       }
 
       val msg =
@@ -644,10 +644,12 @@ class Helper(
 
     val logger =
       if (verbosityLevel >= 0)
-        Some(new TermDisplay(
-          new OutputStreamWriter(System.err),
-          fallbackMode = loggerFallbackMode
-        ))
+        Some(
+          new TermDisplay(
+            new OutputStreamWriter(System.err),
+            fallbackMode = loggerFallbackMode
+          )
+        )
       else
         None
 
@@ -665,8 +667,7 @@ class Helper(
         ttl = ttl0
       )
 
-      (file(cachePolicies.head) /: cachePolicies.tail)(_ orElse file(_))
-        .run
+      (file(cachePolicies.head) /: cachePolicies.tail)(_.orElse(file(_))).run
         .map(artifact.->)
     }
 
@@ -685,7 +686,7 @@ class Helper(
         case (a, err) =>
           val notFound = err match {
             case _: FileError.NotFound => true
-            case _ => false
+            case _                     => false
           }
           a.isOptional && notFound
       }
@@ -700,22 +701,22 @@ class Helper(
     if (verbosityLevel >= 2)
       errPrintln(
         "  Ignoring error(s):\n" +
-        ignoredErrors
+          ignoredErrors
+            .map {
+              case (artifact, error) =>
+                s"${artifact.url}: $error"
+            }
+            .mkString("\n")
+      )
+
+    exitIf(errors.nonEmpty) {
+      s"  Error:\n" +
+        errors
           .map {
             case (artifact, error) =>
               s"${artifact.url}: $error"
           }
           .mkString("\n")
-      )
-
-    exitIf(errors.nonEmpty) {
-      s"  Error:\n" +
-      errors
-        .map {
-          case (artifact, error) =>
-            s"${artifact.url}: $error"
-        }
-        .mkString("\n")
     }
 
     files0
@@ -729,7 +730,7 @@ class Helper(
     def rootLoader(cl: ClassLoader): ClassLoader =
       Option(cl.getParent) match {
         case Some(par) => rootLoader(par)
-        case None => cl
+        case None      => cl
       }
 
     rootLoader(ClassLoader.getSystemClassLoader)
@@ -755,7 +756,6 @@ class Helper(
 
       val (isolatedLoader, filteredFiles0) = isolated.targets.foldLeft((baseLoader, files0)) {
         case ((parent, files0), target) =>
-
           // FIXME These were already fetched above
           val isolatedFiles = fetch(
             sources = false,
@@ -796,7 +796,6 @@ class Helper(
     parentLoader
   )
 
-
   lazy val retainedMainClass = {
 
     val mainClasses = Helper.mainClasses(loader)
@@ -822,23 +821,23 @@ class Helper(
           (module, _, _) <- allModuleVersionConfigs.headOption
           mainClass <- mainClasses.collectFirst {
             case ((org, name), mainClass)
-              if org == module.organization && (
-                module.name == name ||
-                  module.name.startsWith(name + "_") // Ignore cross version suffix
+                if org == module.organization && (
+                  module.name == name ||
+                    module.name.startsWith(name + "_") // Ignore cross version suffix
                 ) =>
               mainClass
           }
         } yield mainClass
 
-        def sameOrgOnlyMainClassOpt = for {
-          (module, _, _) <- allModuleVersionConfigs.headOption
-          orgMainClasses = mainClasses.collect {
-            case ((org, name), mainClass)
-              if org == module.organization =>
-              mainClass
-          }.toSet
-          if orgMainClasses.size == 1
-        } yield orgMainClasses.head
+        def sameOrgOnlyMainClassOpt =
+          for {
+            (module, _, _) <- allModuleVersionConfigs.headOption
+            orgMainClasses = mainClasses.collect {
+              case ((org, name), mainClass) if org == module.organization =>
+                mainClass
+            }.toSet
+            if orgMainClasses.size == 1
+          } yield orgMainClasses.head
 
         mainClassOpt.orElse(sameOrgOnlyMainClassOpt).getOrElse {
           Helper.errPrintln(s"Cannot find default main class. Specify one with -M or --main.")

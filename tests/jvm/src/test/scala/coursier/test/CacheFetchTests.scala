@@ -44,7 +44,8 @@ object CacheFetchTests extends TestSuite {
       val startRes = Resolution(
         Set(
           Dependency(
-            Module("com.github.alexarchambault", "coursier_2.11"), "1.0.0-M9-test"
+            Module("com.github.alexarchambault", "coursier_2.11"),
+            "1.0.0-M9-test"
           )
         )
       )

@@ -1,4 +1,3 @@
-
 object SharedVersions {
 
   def asm = "5.2"

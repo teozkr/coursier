@@ -1,4 +1,3 @@
-
 import sbt._
 import sbt.Keys._
 
@@ -34,11 +33,13 @@ object Publish {
   private def pomStuff = Seq(
     licenses := Seq("Apache 2.0" -> url("http://opensource.org/licenses/Apache-2.0")),
     homepage := Some(url("https://github.com/coursier/coursier")),
-    scmInfo := Some(ScmInfo(
-      url("https://github.com/coursier/coursier.git"),
-      "scm:git:github.com/coursier/coursier.git",
-      Some("scm:git:git@github.com:coursier/coursier.git")
-    )),
+    scmInfo := Some(
+      ScmInfo(
+        url("https://github.com/coursier/coursier.git"),
+        "scm:git:github.com/coursier/coursier.git",
+        Some("scm:git:git@github.com:coursier/coursier.git")
+      )
+    ),
     pomExtra := {
       <developers>
         <developer>
@@ -55,9 +56,9 @@ object Publish {
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
       if (isSnapshot.value)
-        Some("snapshots" at nexus + "content/repositories/snapshots")
+        Some("snapshots".at(nexus + "content/repositories/snapshots"))
       else
-        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+        Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
     },
     credentials ++= {
       Seq("SONATYPE_USER", "SONATYPE_PASS").map(sys.env.get) match {

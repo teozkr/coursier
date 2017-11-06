@@ -5,12 +5,12 @@ import scala.collection.mutable.ArrayBuffer
 sealed abstract class ResolutionError extends Product with Serializable {
 
   final def cause: Option[Throwable] = this match {
-    case ResolutionError.MaximumIterationsReached => None
-    case ResolutionError.UnknownException(ex) => Some(ex)
+    case ResolutionError.MaximumIterationsReached     => None
+    case ResolutionError.UnknownException(ex)         => Some(ex)
     case ResolutionError.UnknownDownloadException(ex) => Some(ex)
-    case _: ResolutionError.Conflicts => None
-    case _: ResolutionError.MetadataDownloadErrors => None
-    case _: ResolutionError.DownloadErrors => None
+    case _: ResolutionError.Conflicts                 => None
+    case _: ResolutionError.MetadataDownloadErrors    => None
+    case _: ResolutionError.DownloadErrors            => None
   }
 
   final def message: String = this match {
@@ -44,7 +44,8 @@ object ResolutionError {
   final case class UnknownDownloadException(ex: Throwable) extends ResolutionError
   final case class Conflicts(description: String) extends ResolutionError
 
-  final case class MetadataDownloadErrors(errors: Seq[((Module, String), Seq[String])]) extends ResolutionError {
+  final case class MetadataDownloadErrors(errors: Seq[((Module, String), Seq[String])])
+      extends ResolutionError {
     def description(): String = {
 
       def grouped(errs: Seq[String]) =
@@ -52,7 +53,7 @@ object ResolutionError {
           .map { s =>
             s.split(": ", 2) match {
               case Array(k, v) => (k, v)
-              case _ => ("", s)
+              case _           => ("", s)
             }
           }
           .groupBy(_._1)
@@ -60,12 +61,10 @@ object ResolutionError {
           .toVector
           .sortBy(_._1)
 
-
       val lines = new ArrayBuffer[String]
       def print(s: String, indentLevel: Int = 0) =
         lines += "  " * indentLevel * 2 + s
       def result = lines.mkString("\n")
-
 
       print(s"Encountered ${errors.length} error(s) in dependency resolution:")
 
@@ -101,12 +100,10 @@ object ResolutionError {
         .toVector
         .sortBy(_._1)
 
-
       val lines = new ArrayBuffer[String]
       def print(s: String, indentLevel: Int = 0) =
         lines += "  " * indentLevel * 2 + s
       def result = lines.mkString("\n")
-
 
       for ((type0, errors) <- groupedArtifactErrors) {
         print(s"${errors.size} $type0")

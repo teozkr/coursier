@@ -3,22 +3,24 @@ package coursier.util
 import scala.collection.mutable.ArrayBuilder
 
 /**
- * Base64 encoder
- * @author Mark Lister
- *         This software is distributed under the 2-Clause BSD license. See the
- *         LICENSE file in the root of the repository.
- *
- *         Copyright (c) 2014 - 2015 Mark Lister
- *
- *         The repo for this Base64 encoder lives at  https://github.com/marklister/base64
- *         Please send your issues, suggestions and pull requests there.
- */
-
+  * Base64 encoder
+  * @author Mark Lister
+  *         This software is distributed under the 2-Clause BSD license. See the
+  *         LICENSE file in the root of the repository.
+  *
+  *         Copyright (c) 2014 - 2015 Mark Lister
+  *
+  *         The repo for this Base64 encoder lives at  https://github.com/marklister/base64
+  *         Please send your issues, suggestions and pull requests there.
+  */
 object Base64 {
 
-  final case class B64Scheme(encodeTable: Array[Char], strictPadding: Boolean = true,
-                       postEncode: String => String = identity,
-                       preDecode: String => String = identity) {
+  final case class B64Scheme(
+    encodeTable: Array[Char],
+    strictPadding: Boolean = true,
+    postEncode: String => String = identity,
+    preDecode: String  => String = identity
+  ) {
     lazy val decodeTable = {
       val b: Array[Int] = new Array[Int](256)
       for (x <- encodeTable.zipWithIndex) {
@@ -28,10 +30,15 @@ object Base64 {
     }
   }
 
-  val base64 = new B64Scheme((('A' to 'Z') ++ ('a' to 'z') ++ ('0' to '9') ++ Seq('+', '/')).toArray)
-  val base64Url = new B64Scheme(base64.encodeTable.dropRight(2) ++ Seq('-', '_'), false,
+  val base64 = new B64Scheme(
+    (('A' to 'Z') ++ ('a' to 'z') ++ ('0' to '9') ++ Seq('+', '/')).toArray
+  )
+  val base64Url = new B64Scheme(
+    base64.encodeTable.dropRight(2) ++ Seq('-', '_'),
+    false,
     _.replaceAllLiterally("=", "%3D"),
-    _.replaceAllLiterally("%3D", "="))
+    _.replaceAllLiterally("%3D", "=")
+  )
 
   implicit class SeqEncoder(s: Seq[Byte]) {
     def toBase64(implicit scheme: B64Scheme = base64): String = Encoder(s.toArray).toBase64
@@ -79,10 +86,17 @@ object Base64 {
         r += (i.toByte)
       }
       if (scheme.strictPadding) {
-        if (pad > 2) throw new java.lang.IllegalArgumentException("Invalid Base64 String: (excessive padding) " + s)
-        if (s.length % 4 != 0) throw new java.lang.IllegalArgumentException("Invalid Base64 String: (padding problem) " + s)
+        if (pad > 2)
+          throw new java.lang.IllegalArgumentException(
+            "Invalid Base64 String: (excessive padding) " + s
+          )
+        if (s.length % 4 != 0)
+          throw new java.lang.IllegalArgumentException(
+            "Invalid Base64 String: (padding problem) " + s
+          )
       }
-      if (computedPad == 3) throw new java.lang.IllegalArgumentException("Invalid Base64 String: (string length) " + s)
+      if (computedPad == 3)
+        throw new java.lang.IllegalArgumentException("Invalid Base64 String: (string length) " + s)
       try {
         val s = (cleanS + "A" * computedPad)
         for (x <- 0 until s.length - 1 by 4) {
@@ -95,7 +109,10 @@ object Base64 {
           r += (i.toByte)
         }
       } catch {
-        case e: NoSuchElementException => throw new java.lang.IllegalArgumentException("Invalid Base64 String: (invalid character)" + e.getMessage + s)
+        case e: NoSuchElementException =>
+          throw new java.lang.IllegalArgumentException(
+            "Invalid Base64 String: (invalid character)" + e.getMessage + s
+          )
       }
       val res = r.result
       res.slice(0, res.length - computedPad)

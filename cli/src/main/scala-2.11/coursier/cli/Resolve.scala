@@ -5,7 +5,7 @@ import caseapp._
 
 final case class Resolve(
   @Recurse
-    common: CommonOptions
+  common: CommonOptions
 ) extends App {
 
   // the `val helper = ` part is needed because of DelayedInit it seems

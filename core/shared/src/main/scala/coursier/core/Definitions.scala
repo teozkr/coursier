@@ -1,14 +1,14 @@
 package coursier.core
 
 /**
- * Identifies a "module".
- *
- * During resolution, all dependencies having the same module
- * will be given the same version, if there are no version conflicts
- * between them.
- *
- * Using the same terminology as Ivy.
- */
+  * Identifies a "module".
+  *
+  * During resolution, all dependencies having the same module
+  * will be given the same version, if there are no version conflicts
+  * between them.
+  *
+  * Using the same terminology as Ivy.
+  */
 final case class Module(
   organization: String,
   name: String,
@@ -20,10 +20,11 @@ final case class Module(
     name = name.trim
   )
 
-  private def attributesStr = attributes.toSeq
-    .sortBy { case (k, _) => k }
-    .map { case (k, v) => s"$k=$v" }
-    .mkString(";")
+  private def attributesStr =
+    attributes.toSeq
+      .sortBy { case (k, _) => k }
+      .map { case (k, v) => s"$k=$v" }
+      .mkString(";")
 
   def nameWithAttributes: String =
     name + (if (attributes.nonEmpty) s";$attributesStr" else "")
@@ -35,21 +36,19 @@ final case class Module(
 }
 
 /**
- * Dependencies with the same @module will typically see their @version-s merged.
- *
- * The remaining fields are left untouched, some being transitively
- * propagated (exclusions, optional, in particular).
- */
+  * Dependencies with the same @module will typically see their @version-s merged.
+  *
+  * The remaining fields are left untouched, some being transitively
+  * propagated (exclusions, optional, in particular).
+  */
 final case class Dependency(
   module: Module,
   version: String,
   configuration: String,
   exclusions: Set[(String, String)],
-
   // Maven-specific
   attributes: Attributes,
   optional: Boolean,
-
   transitive: Boolean
 ) {
   lazy val moduleVersion = (module, version)
@@ -76,7 +75,6 @@ final case class Project(
   dependencies: Seq[(String, Dependency)],
   // For Maven, this is the standard scopes as an Ivy configuration
   configurations: Map[String, Seq[String]],
-
   // Maven-specific
   parent: Option[(Module, String)],
   dependencyManagement: Seq[(String, Dependency)],
@@ -85,16 +83,13 @@ final case class Project(
   versions: Option[Versions],
   snapshotVersioning: Option[SnapshotVersioning],
   packagingOpt: Option[String],
-
   /**
     * Optional exact version used to get this project metadata.
     * May not match `version` for projects having a wrong version in their metadata.
     */
   actualVersionOpt: Option[String],
-
   // First String is configuration
   publications: Seq[(String, Publication)],
-
   // Extra infos, not used during resolution
   info: Info
 ) {

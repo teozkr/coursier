@@ -14,38 +14,40 @@ final case class PropertiesPattern(chunks: Seq[PropertiesPattern.ChunkOrProperty
 
   def substituteProperties(properties: Map[String, String]): String \/ Pattern = {
 
-    val validation = chunks.toVector.traverseM[({ type L[X] = ValidationNel[String, X] })#L, Pattern.Chunk] {
-      case ChunkOrProperty.Prop(name, alternativesOpt) =>
-        properties.get(name) match {
-          case Some(value) =>
-            Vector(Pattern.Chunk.Const(value)).successNel
-          case None =>
-            alternativesOpt match {
-              case Some(alt) =>
-                PropertiesPattern(alt)
-                  .substituteProperties(properties)
-                  .map(_.chunks.toVector)
-                  .validation
-                  .toValidationNel
-              case None =>
-                name.failureNel
-            }
-        }
+    val validation = chunks.toVector
+      .traverseM[({ type L[X] = ValidationNel[String, X] })#L, Pattern.Chunk] {
+        case ChunkOrProperty.Prop(name, alternativesOpt) =>
+          properties.get(name) match {
+            case Some(value) =>
+              Vector(Pattern.Chunk.Const(value)).successNel
+            case None =>
+              alternativesOpt match {
+                case Some(alt) =>
+                  PropertiesPattern(alt)
+                    .substituteProperties(properties)
+                    .map(_.chunks.toVector)
+                    .validation
+                    .toValidationNel
+                case None =>
+                  name.failureNel
+              }
+          }
 
-      case ChunkOrProperty.Opt(l @ _*) =>
-        PropertiesPattern(l)
-          .substituteProperties(properties)
-          .map(l => Vector(Pattern.Chunk.Opt(l.chunks: _*)))
-          .validation
-          .toValidationNel
+        case ChunkOrProperty.Opt(l @ _*) =>
+          PropertiesPattern(l)
+            .substituteProperties(properties)
+            .map(l => Vector(Pattern.Chunk.Opt(l.chunks: _*)))
+            .validation
+            .toValidationNel
 
-      case ChunkOrProperty.Var(name) =>
-        Vector(Pattern.Chunk.Var(name)).successNel
+        case ChunkOrProperty.Var(name) =>
+          Vector(Pattern.Chunk.Var(name)).successNel
 
-      case ChunkOrProperty.Const(value) =>
-        Vector(Pattern.Chunk.Const(value)).successNel
+        case ChunkOrProperty.Const(value) =>
+          Vector(Pattern.Chunk.Const(value)).successNel
 
-    }.map(Pattern(_))
+      }
+      .map(Pattern(_))
 
     validation.disjunction.leftMap { notFoundProps =>
       s"Property(ies) not found: ${notFoundProps.toList.mkString(", ")}"
@@ -65,23 +67,25 @@ final case class Pattern(chunks: Seq[Pattern.Chunk]) {
   def substituteVariables(variables: Map[String, String]): String \/ String = {
 
     def helper(chunks: Seq[Chunk]): ValidationNel[String, Seq[Chunk.Const]] =
-      chunks.toVector.traverseU[ValidationNel[String, Seq[Chunk.Const]]] {
-        case Chunk.Var(name) =>
-          variables.get(name) match {
-            case Some(value) =>
-              Seq(Chunk.Const(value)).successNel
-            case None =>
-              name.failureNel
-          }
-        case Chunk.Opt(l @ _*) =>
-          val res = helper(l)
-          if (res.isSuccess)
-            res
-          else
-            Seq().successNel
-        case c: Chunk.Const =>
-          Seq(c).successNel
-      }.map(_.flatten)
+      chunks.toVector
+        .traverseU[ValidationNel[String, Seq[Chunk.Const]]] {
+          case Chunk.Var(name) =>
+            variables.get(name) match {
+              case Some(value) =>
+                Seq(Chunk.Const(value)).successNel
+              case None =>
+                name.failureNel
+            }
+          case Chunk.Opt(l @ _*) =>
+            val res = helper(l)
+            if (res.isSuccess)
+              res
+            else
+              Seq().successNel
+          case c: Chunk.Const =>
+            Seq(c).successNel
+        }
+        .map(_.flatten)
 
     val validation = helper(chunks)
 
@@ -103,9 +107,10 @@ object PropertiesPattern {
   }
 
   object ChunkOrProperty {
-    final case class Prop(name: String, alternative: Option[Seq[ChunkOrProperty]]) extends ChunkOrProperty {
+    final case class Prop(name: String, alternative: Option[Seq[ChunkOrProperty]])
+        extends ChunkOrProperty {
       def string: String =
-      s"$${" + name + alternative.fold("")(alt => "-" + alt.map(_.string).mkString) + "}"
+        s"$${" + name + alternative.fold("")(alt => "-" + alt.map(_.string).mkString) + "}"
     }
     final case class Var(name: String) extends ChunkOrProperty {
       def string: String = "[" + name + "]"
@@ -123,7 +128,7 @@ object PropertiesPattern {
   private def parser: Parser[Seq[ChunkOrProperty]] = {
 
     val notIn = s"[]{}()$$".toSet
-    val chars = P(CharsWhile(c => !notIn(c)).!)
+    val chars = P(CharsWhile(c         => !notIn(c)).!)
     val noHyphenChars = P(CharsWhile(c => !notIn(c) && c != '-').!)
 
     val constant = P(chars).map(ChunkOrProperty.Const)
@@ -137,12 +142,12 @@ object PropertiesPattern {
     lazy val optional: Parser[ChunkOrProperty.Opt] = P("(" ~ chunks ~ ")")
       .map(l => ChunkOrProperty.Opt(l: _*))
 
-    lazy val chunks: Parser[Seq[ChunkOrProperty]] = P((constant | property | variable | optional).rep)
-      .map(_.toVector) // "Vector" is more readable than "ArrayBuffer"
+    lazy val chunks: Parser[Seq[ChunkOrProperty]] =
+      P((constant | property | variable | optional).rep)
+        .map(_.toVector) // "Vector" is more readable than "ArrayBuffer"
 
     chunks
   }
-
 
   def parse(pattern: String): String \/ PropertiesPattern =
     parser.parse(pattern) match {
@@ -174,20 +179,27 @@ object Pattern {
     implicit def fromString(s: String): Chunk = Const(s)
   }
 
-  import Chunk.{Var, Opt}
+  import Chunk.{Opt, Var}
 
   // Corresponds to
   //   [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
 
   val default = Pattern(
     Seq(
-      Var("organisation"), "/",
-      Var("module"), "/",
+      Var("organisation"),
+      "/",
+      Var("module"),
+      "/",
       Opt("scala_", Var("scalaVersion"), "/"),
       Opt("sbt_", Var("sbtVersion"), "/"),
-      Var("revision"), "/",
-      Var("type"), "s/",
-      Var("artifact"), Opt("-", Var("classifier")), ".", Var("ext")
+      Var("revision"),
+      "/",
+      Var("type"),
+      "s/",
+      Var("artifact"),
+      Opt("-", Var("classifier")),
+      ".",
+      Var("ext")
     )
   )
 

@@ -11,11 +11,13 @@ object CoursierSbtPgpPlugin extends AutoPlugin {
 
   override val projectSettings = Seq(
     updatePgpSignatures := {
-      Tasks.updateTask(
-        None,
-        withClassifiers = false,
-        includeSignatures = true
-      ).value
+      Tasks
+        .updateTask(
+          None,
+          withClassifiers = false,
+          includeSignatures = true
+        )
+        .value
     }
   )
 

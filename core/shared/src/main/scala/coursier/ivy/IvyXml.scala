@@ -24,15 +24,16 @@ object IvyXml {
       .flatMap { node =>
         node.attribute("name").toOption.toSeq.map(_ -> node)
       }
-      .map { case (name, node) =>
-        name -> node.attribute("extends").toOption.toSeq.flatMap(_.split(','))
+      .map {
+        case (name, node) =>
+          name -> node.attribute("extends").toOption.toSeq.flatMap(_.split(','))
       }
 
   // FIXME "default(compile)" likely not to be always the default
   def mappings(mapping: String): Seq[(String, String)] =
     mapping.split(';').flatMap { m =>
       val (froms, tos) = m.split("->", 2) match {
-        case Array(from) => (from, "default(compile)")
+        case Array(from)     => (from, "default(compile)")
         case Array(from, to) => (from, to)
       }
 
@@ -54,7 +55,8 @@ object IvyXml {
           .flatMap { node0 =>
             val org = node0.attribute("org").getOrElse("*")
             val name = node0.attribute("module").orElse(node0.attribute("name")).getOrElse("*")
-            val confs = node0.attribute("conf").toOption.filter(_.nonEmpty).fold(Seq("*"))(_.split(','))
+            val confs =
+              node0.attribute("conf").toOption.filter(_.nonEmpty).fold(Seq("*"))(_.split(','))
             confs.map(_ -> (org, name))
           }
           .groupBy { case (conf, _) => conf }
@@ -72,7 +74,7 @@ object IvyXml {
         } yield {
           val transitive = node.attribute("transitive").toOption match {
             case Some("false") => false
-            case _ => true
+            case _             => true
           }
 
           fromConf -> Dependency(
@@ -137,12 +139,16 @@ object IvyXml {
       val licenses = infoNode.children
         .filter(_.label == "license")
         .flatMap { n =>
-          n.attribute("name").toOption.map { name =>
-            (name, n.attribute("url").toOption)
-          }.toSeq
+          n.attribute("name")
+            .toOption
+            .map { name =>
+              (name, n.attribute("url").toOption)
+            }
+            .toSeq
         }
 
-      val publicationDate = infoNode.attribute("publication")
+      val publicationDate = infoNode
+        .attribute("publication")
         .toOption
         .flatMap(parseDateTime)
 
@@ -166,8 +172,9 @@ object IvyXml {
           // publications node is there -> only its content (if it is empty, no artifacts,
           // as per the Ivy manual)
           val inAllConfs = publicationsOpt.flatMap(_.get("*")).getOrElse(Nil)
-          configurations0.flatMap { case (conf, _) =>
-            (publicationsOpt.flatMap(_.get(conf)).getOrElse(Nil) ++ inAllConfs).map(conf -> _)
+          configurations0.flatMap {
+            case (conf, _) =>
+              (publicationsOpt.flatMap(_.get(conf)).getOrElse(Nil) ++ inAllConfs).map(conf -> _)
           }
         },
         Info(

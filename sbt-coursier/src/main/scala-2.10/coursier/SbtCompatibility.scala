@@ -84,7 +84,8 @@ object SbtCompatibility {
       )
   }
 
-  implicit class ConfigurationReportCompanionOps(val companion: sbt.ConfigurationReport.type) extends AnyVal {
+  implicit class ConfigurationReportCompanionOps(val companion: sbt.ConfigurationReport.type)
+      extends AnyVal {
     def apply(
       configuration: String,
       modules: Seq[sbt.ModuleReport],

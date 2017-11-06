@@ -29,7 +29,8 @@ object Structure {
       find(state).get
 
     def forAllProjects(state: State, projects: Seq[ProjectRef]): sbt.Task[Map[ProjectRef, T]] = {
-      val tasks = projects.flatMap(p => key.in(p).get(structure(state).data).map(_.map(it => (p, it))))
+      val tasks =
+        projects.flatMap(p => key.in(p).get(structure(state).data).map(_.map(it => (p, it))))
       std.TaskExtra.joinTasks(tasks).join.map(_.toMap)
     }
   }

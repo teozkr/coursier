@@ -1,6 +1,6 @@
 package coursier.util
 
-import coursier.core.{Repository, Module}
+import coursier.core.{Module, Repository}
 import coursier.ivy.IvyRepository
 import coursier.maven.MavenRepository
 
@@ -41,16 +41,18 @@ object Parse {
 
     values.right.flatMap {
       case (org, rawName, suffix) =>
-
         val splitName = rawName.split(';')
 
         if (splitName.tail.exists(!_.contains("=")))
           Left(s"malformed attribute(s) in $s")
         else {
           val name = splitName.head
-          val attributes = splitName.tail.map(_.split("=", 2)).map {
-            case Array(key, value) => key -> value
-          }.toMap
+          val attributes = splitName.tail
+            .map(_.split("=", 2))
+            .map {
+              case Array(key, value) => key -> value
+            }
+            .toMap
 
           Right(Module(org, name + suffix, attributes))
         }
@@ -64,7 +66,7 @@ object Parse {
 
     for (elem <- l)
       f(elem) match {
-        case Left(err) => errors += err
+        case Left(err)     => errors += err
         case Right(modVer) => values += modVer
       }
 
@@ -99,13 +101,11 @@ object Parse {
 
     parts match {
       case Array(org, rawName, version) =>
-         module(s"$org:$rawName", defaultScalaVersion)
-           .right
-           .map((_, version))
+        module(s"$org:$rawName", defaultScalaVersion).right
+          .map((_, version))
 
       case Array(org, "", rawName, version) =>
-        module(s"$org::$rawName", defaultScalaVersion)
-          .right
+        module(s"$org::$rawName", defaultScalaVersion).right
           .map((_, version))
 
       case _ =>
@@ -127,29 +127,28 @@ object Parse {
     *  or
     *   org:name;attr1=val1;attr2=val2:version:config
     */
-  def moduleVersionConfig(s: String, defaultScalaVersion: String): Either[String, (Module, String, Option[String])] = {
+  def moduleVersionConfig(
+    s: String,
+    defaultScalaVersion: String
+  ): Either[String, (Module, String, Option[String])] = {
 
     val parts = s.split(":", 5)
 
     parts match {
       case Array(org, "", rawName, version, config) =>
-        module(s"$org::$rawName", defaultScalaVersion)
-          .right
+        module(s"$org::$rawName", defaultScalaVersion).right
           .map((_, version, Some(config)))
 
       case Array(org, "", rawName, version) =>
-        module(s"$org::$rawName", defaultScalaVersion)
-          .right
+        module(s"$org::$rawName", defaultScalaVersion).right
           .map((_, version, None))
 
       case Array(org, rawName, version, config) =>
-        module(s"$org:$rawName", defaultScalaVersion)
-          .right
+        module(s"$org:$rawName", defaultScalaVersion).right
           .map((_, version, Some(config)))
 
       case Array(org, rawName, version) =>
-        module(s"$org:$rawName", defaultScalaVersion)
-          .right
+        module(s"$org:$rawName", defaultScalaVersion).right
           .map((_, version, None))
 
       case _ =>
@@ -166,7 +165,10 @@ object Parse {
     *
     * @return Sequence of errors, and sequence of modules / versions
     */
-  def moduleVersions(l: Seq[String], defaultScalaVersion: String): (Seq[String], Seq[(Module, String)]) =
+  def moduleVersions(
+    l: Seq[String],
+    defaultScalaVersion: String
+  ): (Seq[String], Seq[(Module, String)]) =
     valuesAndErrors(moduleVersion(_, defaultScalaVersion), l)
 
   @deprecated("use the variant accepting a default scala version", "1.0.0-M13")
@@ -178,33 +180,44 @@ object Parse {
     *
     * @return Sequence of errors, and sequence of modules / versions / optional configurations
     */
-  def moduleVersionConfigs(l: Seq[String], defaultScalaVersion: String): (Seq[String], Seq[(Module, String, Option[String])]) =
+  def moduleVersionConfigs(
+    l: Seq[String],
+    defaultScalaVersion: String
+  ): (Seq[String], Seq[(Module, String, Option[String])]) =
     valuesAndErrors(moduleVersionConfig(_, defaultScalaVersion), l)
 
   def repository(s: String): String \/ Repository =
     if (s == "central")
       MavenRepository("https://repo1.maven.org/maven2").right
     else if (s.startsWith("sonatype:"))
-      MavenRepository(s"https://oss.sonatype.org/content/repositories/${s.stripPrefix("sonatype:")}").right
+      MavenRepository(
+        s"https://oss.sonatype.org/content/repositories/${s.stripPrefix("sonatype:")}"
+      ).right
     else if (s.startsWith("bintray:"))
       MavenRepository(s"https://dl.bintray.com/${s.stripPrefix("bintray:")}").right
     else if (s.startsWith("bintray-ivy:"))
-      IvyRepository.fromPattern(
-        s"https://dl.bintray.com/${s.stripPrefix("bintray-ivy:").stripSuffix("/")}/" +:
-          coursier.ivy.Pattern.default
-      ).right
+      IvyRepository
+        .fromPattern(
+          s"https://dl.bintray.com/${s.stripPrefix("bintray-ivy:").stripSuffix("/")}/" +:
+            coursier.ivy.Pattern.default
+        )
+        .right
     else if (s.startsWith("typesafe:ivy-"))
-      IvyRepository.fromPattern(
-        s"https://repo.typesafe.com/typesafe/ivy-${s.stripPrefix("typesafe:ivy-")}/" +:
-          coursier.ivy.Pattern.default
-      ).right
+      IvyRepository
+        .fromPattern(
+          s"https://repo.typesafe.com/typesafe/ivy-${s.stripPrefix("typesafe:ivy-")}/" +:
+            coursier.ivy.Pattern.default
+        )
+        .right
     else if (s.startsWith("typesafe:"))
       MavenRepository(s"https://repo.typesafe.com/typesafe/${s.stripPrefix("typesafe:")}").right
     else if (s.startsWith("sbt-plugin:"))
-      IvyRepository.fromPattern(
-        s"https://repo.scala-sbt.org/scalasbt/sbt-plugin-${s.stripPrefix("sbt-plugin:")}/" +:
-          coursier.ivy.Pattern.default
-      ).right
+      IvyRepository
+        .fromPattern(
+          s"https://repo.scala-sbt.org/scalasbt/sbt-plugin-${s.stripPrefix("sbt-plugin:")}/" +:
+            coursier.ivy.Pattern.default
+        )
+        .right
     else if (s.startsWith("ivy:"))
       IvyRepository.parse(s.stripPrefix("ivy:"))
     else if (s == "jitpack")

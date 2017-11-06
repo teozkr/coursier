@@ -35,7 +35,7 @@ object Platform {
           finally is0.close()
 
         new String(b, UTF_8)
-      } .leftMap{
+      }.leftMap {
         case e: java.io.FileNotFoundException if e.getMessage != null =>
           s"Not found: ${e.getMessage}"
         case e =>

@@ -4,10 +4,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scalaz.{Nondeterminism, Reducer}
 
 /**
- * Minimal Future-based Task.
- *
- * Likely to be flawed and/or sub-optimal, but does the job.
- */
+  * Minimal Future-based Task.
+  *
+  * Likely to be flawed and/or sub-optimal, but does the job.
+  */
 trait Task[T] { self =>
   def map[U](f: T => U): Task[U] =
     new Task[U] {
@@ -38,7 +38,7 @@ object Task {
   implicit val taskMonad: Nondeterminism[Task] =
     new Nondeterminism[Task] {
       def point[A](a: => A): Task[A] = Task.now(a)
-      def bind[A,B](fa: Task[A])(f: A => Task[B]): Task[B] = fa.flatMap(f)
+      def bind[A, B](fa: Task[A])(f: A => Task[B]): Task[B] = fa.flatMap(f)
       override def reduceUnordered[A, M](fs: Seq[Task[A]])(implicit R: Reducer[A, M]): Task[M] =
         Task { implicit ec =>
           val f = Future.sequence(fs.map(_.runF))

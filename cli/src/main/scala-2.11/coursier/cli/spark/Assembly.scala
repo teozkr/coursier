@@ -47,7 +47,7 @@ object Assembly {
 
     val rulesMap = rules.collect { case r: Rule.PathRule => r.path -> r }.toMap
     val excludePatterns = rules.collect { case Rule.ExcludePattern(p) => p }
-    val appendPatterns = rules.collect { case Rule.AppendPattern(p) => p }
+    val appendPatterns = rules.collect { case Rule.AppendPattern(p)   => p }
 
     val manifest = new Manifest
     manifest.getMainAttributes.put(Attributes.Name.MANIFEST_VERSION, "1.0")
@@ -74,7 +74,10 @@ object Assembly {
           for ((ent, content) <- Zip.zipEntries(zis)) {
 
             def append() =
-              concatenedEntries += ent.getName -> ::((ent, content), concatenedEntries.getOrElse(ent.getName, Nil))
+              concatenedEntries += ent.getName -> ::(
+                (ent, content),
+                concatenedEntries.getOrElse(ent.getName, Nil)
+              )
 
             rulesMap.get(ent.getName) match {
               case Some(Rule.Exclude(_)) =>
@@ -180,7 +183,8 @@ object Assembly {
     options: CommonOptions
   ): Helper = {
 
-    val base = if (default) sparkBaseDependencies(scalaVersion, sparkVersion, yarnVersion) else Seq()
+    val base =
+      if (default) sparkBaseDependencies(scalaVersion, sparkVersion, yarnVersion) else Seq()
     new Helper(options, extraDependencies ++ base)
   }
 
@@ -194,7 +198,8 @@ object Assembly {
     artifactTypes: Set[String]
   ): Seq[File] = {
 
-    val helper = sparkJarsHelper(scalaVersion, sparkVersion, yarnVersion, default, extraDependencies, options)
+    val helper =
+      sparkJarsHelper(scalaVersion, sparkVersion, yarnVersion, default, extraDependencies, options)
 
     helper.fetch(sources = false, javadoc = false, artifactTypes = artifactTypes)
   }
@@ -210,9 +215,11 @@ object Assembly {
     checksumSeed: Array[Byte] = "v1".getBytes("UTF-8")
   ): Either[String, (File, Seq[File])] = {
 
-    val helper = sparkJarsHelper(scalaVersion, sparkVersion, yarnVersion, default, extraDependencies, options)
+    val helper =
+      sparkJarsHelper(scalaVersion, sparkVersion, yarnVersion, default, extraDependencies, options)
 
-    val artifacts = helper.artifacts(sources = false, javadoc = false, artifactTypes = artifactTypes)
+    val artifacts =
+      helper.artifacts(sources = false, javadoc = false, artifactTypes = artifactTypes)
     val jars = helper.fetch(sources = false, javadoc = false, artifactTypes = artifactTypes)
 
     val checksums = artifacts.map { a =>
@@ -233,7 +240,6 @@ object Assembly {
           throw new Exception(s"Cannot read SHA-1 sum from $f")
       }
     }
-
 
     val md = MessageDigest.getInstance("SHA-1")
 
@@ -266,14 +272,17 @@ object Assembly {
     if (dest.exists())
       success
     else
-      Cache.withLockFor(helper.cache, dest) {
-        dest.getParentFile.mkdirs()
-        val tmpDest = new File(dest.getParentFile, s".${dest.getName}.part")
-        // FIXME Acquire lock on tmpDest
-        Assembly.make(jars, tmpDest, assemblyRules)
-        FileUtil.atomicMove(tmpDest, dest)
-        \/-((dest, jars))
-      }.leftMap(_.describe).toEither
+      Cache
+        .withLockFor(helper.cache, dest) {
+          dest.getParentFile.mkdirs()
+          val tmpDest = new File(dest.getParentFile, s".${dest.getName}.part")
+          // FIXME Acquire lock on tmpDest
+          Assembly.make(jars, tmpDest, assemblyRules)
+          FileUtil.atomicMove(tmpDest, dest)
+          \/-((dest, jars))
+        }
+        .leftMap(_.describe)
+        .toEither
   }
 
 }

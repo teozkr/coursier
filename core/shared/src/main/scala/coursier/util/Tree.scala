@@ -14,7 +14,12 @@ object Tree {
       * @param prefix    prefix for the print out
       * @param acc       accumulation method on a string
       */
-    def recursivePrint(elems: Seq[T], ancestors: Set[T], prefix: String, acc: String => Unit): Unit = {
+    def recursivePrint(
+      elems: Seq[T],
+      ancestors: Set[T],
+      prefix: String,
+      acc: String => Unit
+    ): Unit = {
       val unseenElems: Seq[T] = elems.filterNot(ancestors.contains)
       val unseenElemsLen = unseenElems.length
       for ((elem, idx) <- unseenElems.iterator.zipWithIndex) {

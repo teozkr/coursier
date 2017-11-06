@@ -29,9 +29,8 @@ object DirectoryListingTests extends TestSuite {
         version,
         "jar",
         extraRepos = Seq(withListingRepo)
-      ) {
-        artifacts =>
-          assert(artifacts.length == 1)
+      ) { artifacts =>
+        assert(artifacts.length == 1)
       }
 
       'jarFoo - CentralTests.withArtifacts(
@@ -39,9 +38,8 @@ object DirectoryListingTests extends TestSuite {
         version,
         "jar-foo",
         extraRepos = Seq(withListingRepo)
-      ) {
-        artifacts =>
-          assert(artifacts.length == 1)
+      ) { artifacts =>
+        assert(artifacts.length == 1)
       }
     }
 
@@ -51,9 +49,8 @@ object DirectoryListingTests extends TestSuite {
         version,
         "jar",
         extraRepos = Seq(withoutListingRepo)
-      ) {
-        artifacts =>
-          assert(artifacts.length == 1)
+      ) { artifacts =>
+        assert(artifacts.length == 1)
       }
 
       'jarFoo - CentralTests.withArtifacts(
@@ -61,9 +58,8 @@ object DirectoryListingTests extends TestSuite {
         version,
         "jar-foo",
         extraRepos = Seq(withoutListingRepo)
-      ) {
-        artifacts =>
-          assert(artifacts.length == 0)
+      ) { artifacts =>
+        assert(artifacts.length == 0)
       }
     }
   }

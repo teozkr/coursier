@@ -13,9 +13,9 @@ import coursier.internal.FileUtil
 
 final case class Bootstrap(
   @Recurse
-    artifactOptions: ArtifactOptions,
+  artifactOptions: ArtifactOptions,
   @Recurse
-    options: BootstrapOptions
+  options: BootstrapOptions
 ) extends App {
 
   import scala.collection.JavaConverters._
@@ -29,7 +29,9 @@ final case class Bootstrap(
 
   val output0 = new File(options.output)
   if (!options.force && output0.exists()) {
-    Console.err.println(s"Error: ${options.output} already exists, use -f option to force erasing it.")
+    Console.err.println(
+      s"Error: ${options.output} already exists, use -f option to force erasing it."
+    )
     sys.exit(1)
   }
 
@@ -93,30 +95,31 @@ final case class Bootstrap(
     val isolatedDeps = options.isolated.isolatedDeps(options.common.scalaVersion)
 
     val (_, isolatedArtifactFiles) =
-      options.isolated.targets.foldLeft((Vector.empty[String], Map.empty[String, (Seq[String], Seq[File])])) {
-        case ((done, acc), target) =>
-          val subRes = helper.res.subset(isolatedDeps.getOrElse(target, Nil).toSet)
-          val subArtifacts = subRes.artifacts.map(_.url)
+      options.isolated.targets
+        .foldLeft((Vector.empty[String], Map.empty[String, (Seq[String], Seq[File])])) {
+          case ((done, acc), target) =>
+            val subRes = helper.res.subset(isolatedDeps.getOrElse(target, Nil).toSet)
+            val subArtifacts = subRes.artifacts.map(_.url)
 
-          val filteredSubArtifacts = subArtifacts.diff(done)
+            val filteredSubArtifacts = subArtifacts.diff(done)
 
-          def subFiles0 = helper.fetch(
-            sources = false,
-            javadoc = false,
-            artifactTypes = artifactOptions.artifactTypes(sources = false, javadoc = false),
-            subset = isolatedDeps.getOrElse(target, Seq.empty).toSet
-          )
+            def subFiles0 = helper.fetch(
+              sources = false,
+              javadoc = false,
+              artifactTypes = artifactOptions.artifactTypes(sources = false, javadoc = false),
+              subset = isolatedDeps.getOrElse(target, Seq.empty).toSet
+            )
 
-          val (subUrls, subFiles) =
-            if (options.standalone)
-              (Nil, subFiles0)
-            else
-              (filteredSubArtifacts, Nil)
+            val (subUrls, subFiles) =
+              if (options.standalone)
+                (Nil, subFiles0)
+              else
+                (filteredSubArtifacts, Nil)
 
-          val updatedAcc = acc + (target -> (subUrls, subFiles))
+            val updatedAcc = acc + (target -> (subUrls, subFiles))
 
-          (done ++ filteredSubArtifacts, updatedAcc)
-      }
+            (done ++ filteredSubArtifacts, updatedAcc)
+        }
 
     val (urls, files) =
       if (options.standalone)
@@ -130,15 +133,17 @@ final case class Bootstrap(
         )
       else
         (
-          helper.artifacts(
-            sources = false,
-            javadoc = false,
-            artifactTypes = artifactOptions.artifactTypes(sources = false, javadoc = false)
-          ).map(_.url),
+          helper
+            .artifacts(
+              sources = false,
+              javadoc = false,
+              artifactTypes = artifactOptions.artifactTypes(sources = false, javadoc = false)
+            )
+            .map(_.url),
           Seq.empty[File]
         )
 
-    val isolatedUrls = isolatedArtifactFiles.map { case (k, (v, _)) => k -> v }
+    val isolatedUrls = isolatedArtifactFiles.map { case (k, (v, _))  => k -> v }
     val isolatedFiles = isolatedArtifactFiles.map { case (k, (_, v)) => k -> v }
 
     val nonHttpUrls = urls.filter(s => !s.startsWith("http://") && !s.startsWith("https://"))
@@ -155,7 +160,6 @@ final case class Bootstrap(
       outputZip.write(data)
       outputZip.closeEntry()
     }
-
 
     val time = System.currentTimeMillis()
 
@@ -186,7 +190,10 @@ final case class Bootstrap(
         val urls = isolatedUrls.getOrElse(target, Nil)
         val files = isolatedFiles.getOrElse(target, Nil)
         putStringEntry(s"bootstrap-isolation-$target-jar-urls", urls.mkString("\n"))
-        putStringEntry(s"bootstrap-isolation-$target-jar-resources", files.map(pathFor).mkString("\n"))
+        putStringEntry(
+          s"bootstrap-isolation-$target-jar-resources",
+          files.map(pathFor).mkString("\n")
+        )
       }
     }
 
@@ -212,13 +219,18 @@ final case class Bootstrap(
     // escaping of  javaOpt  possibly a bit loose :-|
     val shellPreamble = Seq(
       "#!/usr/bin/env sh",
-      "exec java -jar " + options.javaOpt.map(s => "'" + s.replace("'", "\\'") + "'").mkString(" ") + " \"$0\" \"$@\""
+      "exec java -jar " + options.javaOpt
+        .map(s => "'" + s.replace("'", "\\'") + "'")
+        .mkString(" ") + " \"$0\" \"$@\""
     ).mkString("", "\n", "\n")
 
     try FileUtil.write(output0, shellPreamble.getBytes("UTF-8") ++ buffer.toByteArray)
-    catch { case e: IOException =>
-      Console.err.println(s"Error while writing $output0${Option(e.getMessage).fold("")(" (" + _ + ")")}")
-      sys.exit(1)
+    catch {
+      case e: IOException =>
+        Console.err.println(
+          s"Error while writing $output0${Option(e.getMessage).fold("")(" (" + _ + ")")}"
+        )
+        sys.exit(1)
     }
 
     try {

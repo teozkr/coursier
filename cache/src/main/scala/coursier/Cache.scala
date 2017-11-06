@@ -2,9 +2,9 @@ package coursier
 
 import java.math.BigInteger
 import java.net.{HttpURLConnection, URL, URLConnection, URLStreamHandler, URLStreamHandlerFactory}
-import java.nio.channels.{OverlappingFileLockException, FileLock}
+import java.nio.channels.{FileLock, OverlappingFileLockException}
 import java.security.MessageDigest
-import java.util.concurrent.{Callable, ConcurrentHashMap, Executors, ExecutorService}
+import java.util.concurrent.{Callable, ConcurrentHashMap, ExecutorService, Executors}
 import java.util.regex.Pattern
 
 import coursier.core.Authentication
@@ -83,7 +83,7 @@ object Cache {
     cache: File,
     file: File
   )(
-    f: => FileError \/ T,
+    f:        => FileError \/ T,
     ifLocked: => Option[FileError \/ T]
   ): FileError \/ T = {
 
@@ -114,12 +114,10 @@ object Cache {
               out = null
               lockFile.delete()
             }
-        }
-        catch {
+        } catch {
           case _: OverlappingFileLockException =>
             ifLocked
-        }
-        finally if (lock != null) lock.release()
+        } finally if (lock != null) lock.release()
       }
 
       resOpt match {
@@ -135,7 +133,6 @@ object Cache {
 
   def withLockFor[T](cache: File, file: File)(f: => FileError \/ T): FileError \/ T =
     withLockOr(cache, file)(f, Some(-\/(FileError.Locked(file))))
-
 
   private def defaultRetryCount = 3
 
@@ -170,8 +167,7 @@ object Cache {
                 catch {
                   case nfe: FileNotFoundException if nfe.getMessage != null =>
                     -\/(-\/(FileError.NotFound(nfe.getMessage)))
-                }
-                finally {
+                } finally {
                   urlLocks.remove(url)
                 }
 
@@ -180,17 +176,18 @@ object Cache {
               -\/(FileError.ConcurrentDownload(url))
 
           Some(res)
-        }
-        catch {
+        } catch {
           case _: javax.net.ssl.SSLException if retry >= 1 =>
             // TODO If Cache is made an (instantiated) class at some point, allow to log that exception.
             None
           case NonFatal(e) =>
-            Some(-\/(
-              FileError.DownloadError(
-                s"Caught $e${Option(e.getMessage).fold("")(" (" + _ + ")")} while downloading $url"
+            Some(
+              -\/(
+                FileError.DownloadError(
+                  s"Caught $e${Option(e.getMessage).fold("")(" (" + _ + ")")} while downloading $url"
+                )
               )
-            ))
+            )
         }
 
       resOpt match {
@@ -225,35 +222,34 @@ object Cache {
 
         def printError(e: Exception): Unit =
           scala.Console.err.println(
-            s"Cannot instantiate $clsName: $e${Option(e.getMessage).fold("")(" ("+_+")")}"
+            s"Cannot instantiate $clsName: $e${Option(e.getMessage).fold("")(" (" + _ + ")")}"
           )
 
-        val handlerFactoryOpt = clsOpt0.flatMap {
-          cls =>
-            try Some(cls.newInstance().asInstanceOf[URLStreamHandlerFactory])
-            catch {
-              case e: InstantiationException =>
-                printError(e)
-                None
-              case e: IllegalAccessException =>
-                printError(e)
-                None
-              case e: ClassCastException =>
-                printError(e)
-                None
-            }
+        val handlerFactoryOpt = clsOpt0.flatMap { cls =>
+          try Some(cls.newInstance().asInstanceOf[URLStreamHandlerFactory])
+          catch {
+            case e: InstantiationException =>
+              printError(e)
+              None
+            case e: IllegalAccessException =>
+              printError(e)
+              None
+            case e: ClassCastException =>
+              printError(e)
+              None
+          }
         }
 
-        val handlerOpt = handlerFactoryOpt.flatMap {
-          factory =>
-            try Some(factory.createURLStreamHandler(protocol))
-            catch {
-              case NonFatal(e) =>
-                scala.Console.err.println(
-                  s"Cannot get handler for $protocol from $clsName: $e${Option(e.getMessage).fold("")(" ("+_+")")}"
-                )
-                None
-            }
+        val handlerOpt = handlerFactoryOpt.flatMap { factory =>
+          try Some(factory.createURLStreamHandler(protocol))
+          catch {
+            case NonFatal(e) =>
+              scala.Console.err.println(
+                s"Cannot get handler for $protocol from $clsName: $e${Option(e.getMessage)
+                  .fold("")(" (" + _ + ")")}"
+              )
+              None
+          }
         }
 
         val prevOpt = Option(handlerClsCache.putIfAbsent(protocol, handlerOpt))
@@ -269,7 +265,7 @@ object Cache {
       Pattern.quote("Basic realm=\"") +
       "([^" + Pattern.quote("\"") + "]*)" +
       Pattern.quote("\"") +
-    "$"
+      "$"
   ).r
 
   private def basicAuthenticationEncode(user: String, password: String): String =
@@ -341,9 +337,10 @@ object Cache {
           var success = false
           try {
             c.setRequestMethod("HEAD")
-            val len = Some(c.getContentLength) // TODO Use getContentLengthLong when switching to Java >= 7
-              .filter(_ >= 0)
-              .map(_.toLong)
+            val len =
+              Some(c.getContentLength) // TODO Use getContentLengthLong when switching to Java >= 7
+                .filter(_ >= 0)
+                .map(_.toLong)
 
             // TODO 404 Not found could be checked here
 
@@ -381,8 +378,7 @@ object Cache {
 
     // Reference file - if it exists, and we get not found errors on some URLs, we assume
     // we can keep track of these missing, and not try to get them again later.
-    val referenceFileOpt = artifact
-      .extra
+    val referenceFileOpt = artifact.extra
       .get("metadata")
       .map(a => localFile(a.url, cache, a.authentication.map(_.user)))
 
@@ -397,7 +393,7 @@ object Cache {
               Some(lastModified)
             else
               None
-          } : FileError \/ Option[Long]
+          }: FileError \/ Option[Long]
         }
       }
 
@@ -440,7 +436,9 @@ object Cache {
                 }
 
               case other =>
-                -\/(FileError.DownloadError(s"Cannot do HEAD request with connection $other ($url)"))
+                -\/(
+                  FileError.DownloadError(s"Cannot do HEAD request with connection $other ($url)")
+                )
             }
           } finally {
             if (conn != null)
@@ -490,22 +488,22 @@ object Cache {
             case None => Task.now(true)
             case Some(ts) =>
               Task(System.currentTimeMillis()).map(_ > ts + ttl.toMillis)
-          }
-        else
+          } else
           Task.now(false)
       }
 
-      def check = for {
-        fileLastModOpt <- fileLastModified(file)
-        urlLastModOpt <- urlLastModified(url, fileLastModOpt, logger)
-      } yield {
-        val fromDatesOpt = for {
-          fileLastMod <- fileLastModOpt
-          urlLastMod <- urlLastModOpt
-        } yield fileLastMod < urlLastMod
+      def check =
+        for {
+          fileLastModOpt <- fileLastModified(file)
+          urlLastModOpt <- urlLastModified(url, fileLastModOpt, logger)
+        } yield {
+          val fromDatesOpt = for {
+            fileLastMod <- fileLastModOpt
+            urlLastMod <- urlLastModOpt
+          } yield fileLastMod < urlLastMod
 
-        fromDatesOpt.getOrElse(true)
-      }
+          fromDatesOpt.getOrElse(true)
+        }
 
       EitherT {
         fileExists(file).flatMap {
@@ -605,7 +603,13 @@ object Cache {
                         tmp.getParentFile.mkdirs()
                         new FileOutputStream(tmp, partialDownload)
                       }
-                      try readFullyTo(in, out, logger, url, if (partialDownload) alreadyDownloaded else 0L)
+                      try readFullyTo(
+                        in,
+                        out,
+                        logger,
+                        url,
+                        if (partialDownload) alreadyDownloaded else 0L
+                      )
                       finally out.close()
                     } finally in.close()
 
@@ -632,19 +636,25 @@ object Cache {
             def progress(currentLen: Long): Unit =
               if (lenOpt.isEmpty) {
                 lenOpt = Some(contentLength(url, artifact.authentication, logger).toOption.flatten)
-                for (o <- lenOpt; len <- o)
-                  logger.foreach(_.downloadLength(url, len, currentLen, watching = true))
+                for {
+                  o <- lenOpt
+                  len <- o
+                } logger.foreach(_.downloadLength(url, len, currentLen, watching = true))
               } else
                 logger.foreach(_.downloadProgress(url, currentLen))
 
             def done(): Unit =
               if (lenOpt.isEmpty) {
                 lenOpt = Some(contentLength(url, artifact.authentication, logger).toOption.flatten)
-                for (o <- lenOpt; len <- o)
-                  logger.foreach(_.downloadLength(url, len, len, watching = true))
+                for {
+                  o <- lenOpt
+                  len <- o
+                } logger.foreach(_.downloadLength(url, len, len, watching = true))
               } else
-                for (o <- lenOpt; len <- o)
-                  logger.foreach(_.downloadProgress(url, len))
+                for {
+                  o <- lenOpt
+                  len <- o
+                } logger.foreach(_.downloadProgress(url, len))
 
             if (file.exists()) {
               done()
@@ -656,7 +666,8 @@ object Cache {
 
               val currentLen = tmp.length()
 
-              if (currentLen == 0L && file.exists()) { // check again if file exists in case it was created in the mean time
+              if (currentLen == 0L && file
+                    .exists()) { // check again if file exists in case it was created in the mean time
                 done()
                 Some(().right)
               } else {
@@ -729,7 +740,8 @@ object Cache {
         }
 
       cachePolicy match {
-        case CachePolicy.FetchMissing | CachePolicy.LocalOnly | CachePolicy.LocalUpdate | CachePolicy.LocalUpdateChanging =>
+        case CachePolicy.FetchMissing | CachePolicy.LocalOnly | CachePolicy.LocalUpdate |
+            CachePolicy.LocalUpdateChanging =>
           validErrFileExists.flatMap { exists =>
             if (exists)
               EitherT(Task.now(FileError.NotFound(url, Some(true)).left[Unit]))
@@ -759,7 +771,11 @@ object Cache {
       EitherT(Task(res))
     }
 
-    def checkFileExists(file: File, url: String, log: Boolean = true): EitherT[Task, FileError, Unit] =
+    def checkFileExists(
+      file: File,
+      url: String,
+      log: Boolean = true
+    ): EitherT[Task, FileError, Unit] =
       EitherT {
         Task {
           if (file.exists()) {
@@ -772,8 +788,7 @@ object Cache {
 
     val urls =
       artifact.url +: {
-        checksums
-          .toSeq
+        checksums.toSeq
           .flatMap(artifact.checksumUrls.get)
       }
 
@@ -836,7 +851,7 @@ object Cache {
               case CachePolicy.UpdateChanging | CachePolicy.Update =>
                 update
               case CachePolicy.FetchMissing =>
-                checkFileExists(file, url) orElse remoteKeepErrors(file, url)
+                checkFileExists(file, url).orElse(remoteKeepErrors(file, url))
               case CachePolicy.ForceDownload =>
                 remoteKeepErrors(file, url)
             }
@@ -852,11 +867,9 @@ object Cache {
   }
 
   def parseChecksum(content: String): Option[BigInteger] = {
-    val lines = content
-      .lines
-      .toVector
+    val lines = content.lines.toVector
 
-    parseChecksumLine(lines) orElse parseChecksumAlternative(lines)
+    parseChecksumLine(lines).orElse(parseChecksumAlternative(lines))
   }
 
   def parseRawChecksum(content: Array[Byte]): Option[BigInteger] =
@@ -864,11 +877,9 @@ object Cache {
       Some(new BigInteger(content))
     else {
       val s = new String(content, UTF_8)
-      val lines = s
-        .lines
-        .toVector
+      val lines = s.lines.toVector
 
-      parseChecksumLine(lines) orElse parseChecksumAlternative(lines)
+      parseChecksumLine(lines).orElse(parseChecksumAlternative(lines))
     }
 
   // matches md5 or sha1 or sha-256
@@ -884,11 +895,15 @@ object Cache {
     findChecksum(lines.map(_.toLowerCase.replaceAll("\\s", "")))
 
   private def parseChecksumAlternative(lines: Seq[String]): Option[BigInteger] =
-    findChecksum(lines.flatMap(_.toLowerCase.split("\\s+"))) orElse {
-      findChecksum(lines.map(_.toLowerCase
-        .split("\\s+")
-        .filter(_.matches("[0-9a-f]+"))
-        .mkString))
+    findChecksum(lines.flatMap(_.toLowerCase.split("\\s+"))).orElse {
+      findChecksum(
+        lines.map(
+          _.toLowerCase
+            .split("\\s+")
+            .filter(_.matches("[0-9a-f]+"))
+            .mkString
+        )
+      )
     }
 
   def validateChecksum(
@@ -927,13 +942,15 @@ object Cache {
                 if (sum == calculatedSum)
                   ().right
                 else
-                  FileError.WrongChecksum(
-                    sumType,
-                    calculatedSum.toString(16),
-                    sum.toString(16),
-                    localFile0.getPath,
-                    sumFile.getPath
-                  ).left
+                  FileError
+                    .WrongChecksum(
+                      sumType,
+                      calculatedSum.toString(16),
+                      sum.toString(16),
+                      localFile0.getPath,
+                      sumFile.getPath
+                    )
+                    .left
             }
           }
 
@@ -971,8 +988,9 @@ object Cache {
           case None => true
           case Some(c) =>
             artifact.checksumUrls.get(c).exists { cUrl =>
-              results.exists { case ((_, u), b) =>
-                u == cUrl && b.isRight
+              results.exists {
+                case ((_, u), b) =>
+                  u == cUrl && b.isRight
               }
             }
         }
@@ -1004,72 +1022,74 @@ object Cache {
     logger: Option[Logger] = None,
     pool: ExecutorService = defaultPool,
     ttl: Option[Duration] = defaultTtl
-  ): Fetch.Content[Task] = {
-    artifact =>
-      file(
-        artifact,
-        cache,
-        cachePolicy,
-        checksums = checksums,
-        logger = logger,
-        pool = pool,
-        ttl = ttl
-      ).leftMap(_.describe).flatMap { f =>
+  ): Fetch.Content[Task] = { artifact =>
+    file(
+      artifact,
+      cache,
+      cachePolicy,
+      checksums = checksums,
+      logger = logger,
+      pool = pool,
+      ttl = ttl
+    ).leftMap(_.describe).flatMap { f =>
+      def notFound(f: File) = Left(s"${f.getCanonicalPath} not found")
 
-        def notFound(f: File) = Left(s"${f.getCanonicalPath} not found")
+      def read(f: File) =
+        try Right(new String(FileUtil.readAllBytes(f), UTF_8))
+        catch {
+          case NonFatal(e) =>
+            Left(s"Could not read (file:${f.getCanonicalPath}): ${e.getMessage}")
+        }
 
-        def read(f: File) =
-          try Right(new String(FileUtil.readAllBytes(f), UTF_8))
-          catch {
-            case NonFatal(e) =>
-              Left(s"Could not read (file:${f.getCanonicalPath}): ${e.getMessage}")
-          }
+      val res = if (f.exists()) {
+        if (f.isDirectory) {
+          if (artifact.url.startsWith("file:")) {
 
-        val res = if (f.exists()) {
-          if (f.isDirectory) {
-            if (artifact.url.startsWith("file:")) {
-
-              val elements = f.listFiles().map { c =>
+            val elements = f
+              .listFiles()
+              .map { c =>
                 val name = c.getName
-                val name0 = if (c.isDirectory)
-                  name + "/"
-                else
-                  name
+                val name0 =
+                  if (c.isDirectory)
+                    name + "/"
+                  else
+                    name
 
                 s"""<li><a href="$name0">$name0</a></li>"""
-              }.mkString
+              }
+              .mkString
 
-              val page =
-                s"""<!DOCTYPE html>
-                   |<html>
-                   |<head></head>
-                   |<body>
-                   |<ul>
-                   |$elements
-                   |</ul>
-                   |</body>
-                   |</html>
+            val page =
+              s"""<!DOCTYPE html>
+                 |<html>
+                 |<head></head>
+                 |<body>
+                 |<ul>
+                 |$elements
+                 |</ul>
+                 |</body>
+                 |</html>
                  """.stripMargin
 
-              Right(page)
-            } else {
-              val f0 = new File(f, ".directory")
+            Right(page)
+          } else {
+            val f0 = new File(f, ".directory")
 
-              if (f0.exists()) {
-                if (f0.isDirectory)
-                  Left(s"Woops: ${f.getCanonicalPath} is a directory")
-                else
-                  read(f0)
-              } else
-                notFound(f0)
-            }
-          } else
-            read(f)
+            if (f0.exists()) {
+              if (f0.isDirectory)
+                Left(s"Woops: ${f.getCanonicalPath} is a directory")
+              else
+                read(f0)
+            } else
+              notFound(f0)
+          }
         } else
-          notFound(f)
+          read(f)
+      } else
+        notFound(f)
 
-        EitherT.fromEither(Task.now[Either[String, String]](res))
-      }
+      EitherT.fromEither(Task.now[Either[String, String]](res))
+    }
   }
 
   private lazy val ivy2HomeUri = {
@@ -1086,26 +1106,29 @@ object Cache {
     dropInfoAttributes = true
   )
 
-  lazy val ivy2Cache = IvyRepository.parse(
-    ivy2HomeUri + "cache/" +
-      "(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[organisation]/[module]/[type]s/[artifact]-[revision](-[classifier]).[ext]",
-    metadataPatternOpt = Some(
+  lazy val ivy2Cache = IvyRepository
+    .parse(
       ivy2HomeUri + "cache/" +
-        "(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[organisation]/[module]/[type]-[revision](-[classifier]).[ext]"
-    ),
-    withChecksums = false,
-    withSignatures = false,
-    dropInfoAttributes = true
-  ).getOrElse(
-    throw new Exception("Cannot happen")
-  )
+        "(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[organisation]/[module]/[type]s/[artifact]-[revision](-[classifier]).[ext]",
+      metadataPatternOpt = Some(
+        ivy2HomeUri + "cache/" +
+          "(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[organisation]/[module]/[type]-[revision](-[classifier]).[ext]"
+      ),
+      withChecksums = false,
+      withSignatures = false,
+      dropInfoAttributes = true
+    )
+    .getOrElse(
+      throw new Exception("Cannot happen")
+    )
 
   lazy val default: File = CachePath.defaultCacheDirectory()
 
   val defaultConcurrentDownloadCount = 6
 
   lazy val defaultPool =
-    Executors.newFixedThreadPool(defaultConcurrentDownloadCount, Strategy.DefaultDaemonThreadFactory)
+    Executors
+      .newFixedThreadPool(defaultConcurrentDownloadCount, Strategy.DefaultDaemonThreadFactory)
 
   lazy val defaultTtl: Option[Duration] = {
     def fromString(s: String) =
@@ -1127,26 +1150,39 @@ object Cache {
 
     def downloadingArtifact(url: String, file: File): Unit = {}
 
-    @deprecated("extend Logger.Extended instead and use / override the variant with 4 arguments", "1.0.0-M10")
+    @deprecated(
+      "extend Logger.Extended instead and use / override the variant with 4 arguments",
+      "1.0.0-M10"
+    )
     def downloadLength(url: String, length: Long): Unit = {}
-    @deprecated("extend Logger.Extended instead and use / override the variant with 4 arguments", "1.0.0-RC4")
-    def downloadLength(url: String, length: Long, alreadyDownloaded: Long): Unit = {
+    @deprecated(
+      "extend Logger.Extended instead and use / override the variant with 4 arguments",
+      "1.0.0-RC4"
+    )
+    def downloadLength(url: String, length: Long, alreadyDownloaded: Long): Unit =
       downloadLength(url, length)
-    }
 
     def downloadProgress(url: String, downloaded: Long): Unit = {}
 
     def downloadedArtifact(url: String, success: Boolean): Unit = {}
     def checkingUpdates(url: String, currentTimeOpt: Option[Long]): Unit = {}
-    def checkingUpdatesResult(url: String, currentTimeOpt: Option[Long], remoteTimeOpt: Option[Long]): Unit = {}
+    def checkingUpdatesResult(
+      url: String,
+      currentTimeOpt: Option[Long],
+      remoteTimeOpt: Option[Long]
+    ): Unit = {}
   }
 
   object Logger {
     // adding new methods to this one, not to break bin compat in 2.10 / 2.11
     abstract class Extended extends Logger {
-      def downloadLength(url: String, totalLength: Long, alreadyDownloaded: Long, watching: Boolean): Unit = {
+      def downloadLength(
+        url: String,
+        totalLength: Long,
+        alreadyDownloaded: Long,
+        watching: Boolean
+      ): Unit =
         downloadLength(url, totalLength, 0L)
-      }
 
       def gettingLength(url: String): Unit = {}
       def gettingLengthResult(url: String, length: Option[Long]): Unit = {}
@@ -1176,14 +1212,18 @@ object Cache {
                 logger.downloadedArtifact(url, success)
               override def checkingUpdates(url: String, currentTimeOpt: Option[Long]) =
                 logger.checkingUpdates(url, currentTimeOpt)
-              override def checkingUpdatesResult(url: String, currentTimeOpt: Option[Long], remoteTimeOpt: Option[Long]) =
+              override def checkingUpdatesResult(
+                url: String,
+                currentTimeOpt: Option[Long],
+                remoteTimeOpt: Option[Long]
+              ) =
                 logger.checkingUpdatesResult(url, currentTimeOpt, remoteTimeOpt)
             }
         }
     }
   }
 
-  var bufferSize = 1024*1024
+  var bufferSize = 1024 * 1024
 
   def readFullySync(is: InputStream) = {
     val buffer = new ByteArrayOutputStream()

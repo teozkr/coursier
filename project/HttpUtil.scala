@@ -14,8 +14,7 @@ object HttpUtil {
     while ({
       nRead = is.read(data, 0, data.length)
       nRead != -1
-    })
-      buffer.write(data, 0, nRead)
+    }) buffer.write(data, 0, nRead)
 
     buffer.flush()
     buffer.toByteArray

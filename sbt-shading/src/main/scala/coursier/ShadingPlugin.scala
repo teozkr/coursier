@@ -4,7 +4,7 @@ import java.io.File
 
 import coursier.ivy.IvyXml.{mappings => ivyXmlMappings}
 import sbt.Keys._
-import sbt.{AutoPlugin, Compile, Configuration, SettingKey, TaskKey, inConfig}
+import sbt.{inConfig, AutoPlugin, Compile, Configuration, SettingKey, TaskKey}
 
 import SbtCompatibility._
 
@@ -79,81 +79,86 @@ object ShadingPlugin extends AutoPlugin {
 
   override lazy val projectSettings =
     Seq(
-      coursierConfigurations := Tasks.coursierConfigurationsTask(
-        Some(baseDependencyConfiguration -> Shaded.name)
-      ).value,
-      ivyConfigurations := Shaded +: ivyConfigurations.value.map {
-        conf =>
-          if (conf.name == "compile")
-            conf.extend(Shaded)
-          else
-            conf
+      coursierConfigurations := Tasks
+        .coursierConfigurationsTask(
+          Some(baseDependencyConfiguration -> Shaded.name)
+        )
+        .value,
+      ivyConfigurations := Shaded +: ivyConfigurations.value.map { conf =>
+        if (conf.name == "compile")
+          conf.extend(Shaded)
+        else
+          conf
       }
     ) ++
-    inConfig(Shading)(
-      sbt.Defaults.configSettings ++
-        sbt.Classpaths.ivyBaseSettings ++
-        sbt.Classpaths.ivyPublishSettings ++
-        shadingJvmPublishSettings ++
-        CoursierPlugin.coursierSettings(
-          Some(baseDependencyConfiguration -> Shaded.name),
-          Seq(Shading -> Compile.name)
-        ) ++
-        CoursierPlugin.treeSettings ++
-        Seq(
-          configuration := baseSbtConfiguration, // wuw
-          ivyConfigurations := ivyConfigurations.in(baseSbtConfiguration).value
-            .filter(_.name != Shaded.name)
-            .map(c => c.withExtendsConfigs(c.extendsConfigs.filter(_.name != Shaded.name))),
-          libraryDependencies := libraryDependencies.in(baseSbtConfiguration).value.filter { dep =>
-            val isShaded = dep.configurations.exists { mappings =>
-              ivyXmlMappings(mappings).exists(_._1 == Shaded.name)
-            }
-
-            !isShaded
-          },
-          // required for cross-projects in particular
-          unmanagedSourceDirectories := (unmanagedSourceDirectories in Compile).value,
-          toShadeJars := {
-            coursier.Shading.toShadeJars(
-              coursierProject.in(baseSbtConfiguration).value,
-              coursierResolutions
-                .in(baseSbtConfiguration)
-                .value
-                .collectFirst {
-                  case (configs, res) if configs(baseDependencyConfiguration) =>
-                    res
+      inConfig(Shading)(
+        sbt.Defaults.configSettings ++
+          sbt.Classpaths.ivyBaseSettings ++
+          sbt.Classpaths.ivyPublishSettings ++
+          shadingJvmPublishSettings ++
+          CoursierPlugin.coursierSettings(
+            Some(baseDependencyConfiguration -> Shaded.name),
+            Seq(Shading -> Compile.name)
+          ) ++
+          CoursierPlugin.treeSettings ++
+          Seq(
+            configuration := baseSbtConfiguration, // wuw
+            ivyConfigurations := ivyConfigurations
+              .in(baseSbtConfiguration)
+              .value
+              .filter(_.name != Shaded.name)
+              .map(c => c.withExtendsConfigs(c.extendsConfigs.filter(_.name != Shaded.name))),
+            libraryDependencies := libraryDependencies.in(baseSbtConfiguration).value.filter {
+              dep =>
+                val isShaded = dep.configurations.exists { mappings =>
+                  ivyXmlMappings(mappings).exists(_._1 == Shaded.name)
                 }
-                .getOrElse {
-                  sys.error(s"Resolution for configuration $baseDependencyConfiguration not found")
+
+                !isShaded
+            },
+            // required for cross-projects in particular
+            unmanagedSourceDirectories := (unmanagedSourceDirectories in Compile).value,
+            toShadeJars := {
+              coursier.Shading.toShadeJars(
+                coursierProject.in(baseSbtConfiguration).value,
+                coursierResolutions
+                  .in(baseSbtConfiguration)
+                  .value
+                  .collectFirst {
+                    case (configs, res) if configs(baseDependencyConfiguration) =>
+                      res
+                  }
+                  .getOrElse {
+                    sys
+                      .error(s"Resolution for configuration $baseDependencyConfiguration not found")
+                  },
+                coursierConfigurations.in(baseSbtConfiguration).value,
+                Keys.coursierArtifacts.in(baseSbtConfiguration).value,
+                classpathTypes.value,
+                baseDependencyConfiguration,
+                Shaded.name,
+                streams.value.log
+              )
+            },
+            toShadeClasses := {
+              coursier.Shading.toShadeClasses(
+                shadeNamespaces.value,
+                toShadeJars.value,
+                streams.value.log
+              )
+            },
+            packageBin := {
+              coursier.Shading.createPackage(
+                packageBin.in(baseSbtConfiguration).value,
+                shadingNamespace.?.value.getOrElse {
+                  throw new NoSuchElementException("shadingNamespace key not set")
                 },
-              coursierConfigurations.in(baseSbtConfiguration).value,
-              Keys.coursierArtifacts.in(baseSbtConfiguration).value,
-              classpathTypes.value,
-              baseDependencyConfiguration,
-              Shaded.name,
-              streams.value.log
-            )
-          },
-          toShadeClasses := {
-            coursier.Shading.toShadeClasses(
-              shadeNamespaces.value,
-              toShadeJars.value,
-              streams.value.log
-            )
-          },
-          packageBin := {
-            coursier.Shading.createPackage(
-              packageBin.in(baseSbtConfiguration).value,
-              shadingNamespace.?.value.getOrElse {
-                throw new NoSuchElementException("shadingNamespace key not set")
-              },
-              shadeNamespaces.value,
-              toShadeClasses.value,
-              toShadeJars.value
-            )
-          }
-        )
-    )
+                shadeNamespaces.value,
+                toShadeClasses.value,
+                toShadeJars.value
+              )
+            }
+          )
+      )
 
 }

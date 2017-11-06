@@ -2,7 +2,7 @@ package coursier
 
 import org.scalajs.dom.raw.{Event, XMLHttpRequest}
 
-import scala.concurrent.{ExecutionContext, Promise, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 import scala.language.implicitConversions
 
@@ -19,11 +19,11 @@ object Platform {
 
   lazy val jsonpAvailable = !js.isUndefined(g.jsonp)
 
-  val timeout = 
+  val timeout =
     if (jsonpAvailable)
       10000 // Browser - better to have it > 5000 for complex resolutions
     else
-      4000  // Node - tests crash if not < 5000
+      4000 // Node - tests crash if not < 5000
 
   /** Available if we're running on node, and package xhr2 is installed */
   lazy val xhr = g.require("xhr2")
@@ -46,13 +46,17 @@ object Platform {
 
     val p = Promise[String]()
 
-    g.jsonp(url0, (res: js.Dynamic) => if (!p.isCompleted) {
-      val success = !js.isUndefined(res) && !js.isUndefined(res.results)
-      if (success)
-        p.success(res.results.asInstanceOf[js.Array[String]].mkString("\n"))
-      else
-        p.failure(new Exception(s"Fetching $url ($url0)"))
-    })
+    g.jsonp(
+      url0,
+      (res: js.Dynamic) =>
+        if (!p.isCompleted) {
+          val success = !js.isUndefined(res) && !js.isUndefined(res.results)
+          if (success)
+            p.success(res.results.asInstanceOf[js.Array[String]].mkString("\n"))
+          else
+            p.failure(new Exception(s"Fetching $url ($url0)"))
+      }
+    )
 
     fetchTimeout(s"$url ($url0)", p)
     p.future
@@ -81,9 +85,10 @@ object Platform {
       Task { implicit ec =>
         get(artifact.url)
           .map(\/-(_))
-          .recover { case e: Exception =>
-          -\/(e.toString + Option(e.getMessage).fold("")(" (" + _ + ")"))
-        }
+          .recover {
+            case e: Exception =>
+              -\/(e.toString + Option(e.getMessage).fold("")(" (" + _ + ")"))
+          }
       }
     )
   }
@@ -104,11 +109,14 @@ object Platform {
       Task { implicit ec =>
         Future(logger.fetching(artifact.url))
           .flatMap(_ => get(artifact.url))
-          .map { s => logger.fetched(artifact.url); \/-(s) }
-          .recover { case e: Exception =>
-            val msg = e.toString + Option(e.getMessage).fold("")(" (" + _ + ")")
-            logger.other(artifact.url, msg)
-            -\/(msg)
+          .map { s =>
+            logger.fetched(artifact.url); \/-(s)
+          }
+          .recover {
+            case e: Exception =>
+              val msg = e.toString + Option(e.getMessage).fold("")(" (" + _ + ")")
+              logger.other(artifact.url, msg)
+              -\/(msg)
           }
       }
     )

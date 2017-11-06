@@ -17,8 +17,8 @@ object Release {
   // adapted from https://github.com/sbt/sbt-release/blob/eccd4cb7b9818b2a731380fe31c399dc9cb7375b/src/main/scala/ReleaseExtra.scala#L239-L243
   private def toProcessLogger(st: State): ProcessLogger =
     new ProcessLogger {
-      def err(s: => String) = st.log.info(s)
-      def out(s: => String) = st.log.info(s)
+      def err(s:       => String) = st.log.info(s)
+      def out(s:       => String) = st.log.info(s)
       def buffer[T](f: => T) = st.log.buffer(f)
     }
 
@@ -30,10 +30,10 @@ object Release {
   }
 
   val checkTravisStatus = ReleaseStep { state =>
-
     val currentHash = state.vcs.currentHash
 
-    val build = Travis.builds("coursier/coursier", state.log)
+    val build = Travis
+      .builds("coursier/coursier", state.log)
       .find { build =>
         build.job_ids.headOption.exists { id =>
           Travis.job(id, state.log).commit.sha == currentHash
@@ -55,7 +55,6 @@ object Release {
   }
 
   val checkAppveyorStatus = ReleaseStep { state =>
-
     val currentHash = state.vcs.currentHash
 
     val build = Appveyor.branchLastBuild("alexarchambault/coursier-a7n6k", "master", state.log)
@@ -63,7 +62,9 @@ object Release {
     state.log.info(s"Found last build ${build.buildId} for branch master, status: ${build.status}")
 
     if (build.commitId != currentHash)
-      sys.error(s"Last master Appveyor build corresponds to commit ${build.commitId}, expected $currentHash")
+      sys.error(
+        s"Last master Appveyor build corresponds to commit ${build.commitId}, expected $currentHash"
+      )
 
     if (build.status != "success")
       sys.error(s"Last master Appveyor build status: ${build.status}")
@@ -91,24 +92,21 @@ object Release {
     initialVer == nextVer
   }
 
-
   val updateVersionPattern = "(?m)^VERSION=.*$".r
   def updateVersionInScript(file: File, newVersion: String): Unit = {
     val content = Source.fromFile(file)(Codec.UTF8).mkString
 
     updateVersionPattern.findAllIn(content).toVector match {
-      case Seq() => sys.error(s"Found no matches in $file")
+      case Seq()  => sys.error(s"Found no matches in $file")
       case Seq(_) =>
-      case _ => sys.error(s"Found too many matches in $file")
+      case _      => sys.error(s"Found too many matches in $file")
     }
 
     val newContent = updateVersionPattern.replaceAllIn(content, "VERSION=" + newVersion)
     Files.write(file.toPath, newContent.getBytes(StandardCharsets.UTF_8))
   }
 
-
   val updateScripts = ReleaseStep { state =>
-
     val (releaseVer, _) = state.get(ReleaseKeys.versions).getOrElse {
       sys.error(s"${ReleaseKeys.versions.label} key not set")
     }
@@ -132,7 +130,6 @@ object Release {
   }
 
   val updateLaunchers = ReleaseStep { state =>
-
     val baseDir = Project.extract(state).get(baseDirectory.in(ThisBuild))
     val scriptsDir = baseDir / "scripts"
     val scriptFiles = Seq(
@@ -152,10 +149,10 @@ object Release {
   }
 
   val savePreviousReleaseVersion = ReleaseStep { state =>
-
     val cmd = Seq(state.vcs.commandName, "tag", "--sort", "version:refname")
 
-    val tag = scala.sys.process.Process(cmd)
+    val tag = scala.sys.process
+      .Process(cmd)
       .!!
       .linesIterator
       .toVector
@@ -174,7 +171,6 @@ object Release {
   }
 
   val updateTutReadme = ReleaseStep { state =>
-
     val log = toProcessLogger(state)
 
     val previousVer = state.get(previousReleaseVersion).getOrElse {
@@ -197,7 +193,6 @@ object Release {
   }
 
   val stageReadme = ReleaseStep { state =>
-
     val log = toProcessLogger(state)
 
     val baseDir = Project.extract(state).get(baseDirectory.in(ThisBuild))
@@ -208,11 +203,10 @@ object Release {
     state
   }
 
-
-  val coursierVersionPattern = s"(?m)^${Pattern.quote("def coursierVersion0 = \"")}[^${'"'}]*${Pattern.quote("\"")}$$".r
+  val coursierVersionPattern =
+    s"(?m)^${Pattern.quote("def coursierVersion0 = \"")}[^${'"'}]*${Pattern.quote("\"")}$$".r
 
   val updatePluginsSbt = ReleaseStep { state =>
-
     val vcs = state.vcs
     val log = toProcessLogger(state)
 
@@ -231,12 +225,13 @@ object Release {
       val content = Source.fromFile(f)(Codec.UTF8).mkString
 
       coursierVersionPattern.findAllIn(content).toVector match {
-        case Seq() => sys.error(s"Found no matches in $f")
+        case Seq()  => sys.error(s"Found no matches in $f")
         case Seq(_) =>
-        case _ => sys.error(s"Found too many matches in $f")
+        case _      => sys.error(s"Found too many matches in $f")
       }
 
-      val newContent = coursierVersionPattern.replaceAllIn(content, "def coursierVersion0 = \"" + releaseVer + "\"")
+      val newContent = coursierVersionPattern
+        .replaceAllIn(content, "def coursierVersion0 = \"" + releaseVer + "\"")
       Files.write(f.toPath, newContent.getBytes(StandardCharsets.UTF_8))
       vcs.add(f.getAbsolutePath).!!(log)
     }
@@ -244,10 +239,10 @@ object Release {
     state
   }
 
-  val mimaVersionsPattern = s"(?m)^(\\s+)${Pattern.quote("\"\" // binary compatibility versions")}$$".r
+  val mimaVersionsPattern =
+    s"(?m)^(\\s+)${Pattern.quote("\"\" // binary compatibility versions")}$$".r
 
   val updateMimaVersions = ReleaseStep { state =>
-
     val vcs = state.vcs
     val log = toProcessLogger(state)
 
@@ -261,9 +256,9 @@ object Release {
     val content = Source.fromFile(mimaScalaFile)(Codec.UTF8).mkString
 
     mimaVersionsPattern.findAllIn(content).toVector match {
-      case Seq() => sys.error(s"Found no matches in $mimaScalaFile")
+      case Seq()  => sys.error(s"Found no matches in $mimaScalaFile")
       case Seq(_) =>
-      case _ => sys.error(s"Found too many matches in $mimaScalaFile")
+      case _      => sys.error(s"Found too many matches in $mimaScalaFile")
     }
 
     val newContent = mimaVersionsPattern.replaceAllIn(
@@ -283,7 +278,6 @@ object Release {
 
   val commitUpdates = ReleaseStep(
     action = { state =>
-
       val log = toProcessLogger(state)
 
       val (releaseVer, _) = state.get(ReleaseKeys.versions).getOrElse {
@@ -295,7 +289,6 @@ object Release {
       state
     },
     check = { state =>
-
       val vcs = state.vcs
 
       if (vcs.hasModifiedFiles)
@@ -311,7 +304,6 @@ object Release {
   )
 
   val addReleaseToManifest = ReleaseStep { state =>
-
     val (releaseVer, _) = state.get(ReleaseKeys.versions).getOrElse {
       sys.error(s"${ReleaseKeys.versions.label} key not set")
     }
@@ -330,7 +322,6 @@ object Release {
 
   // tagRelease from sbt-release seem to use the next version (snapshot one typically) rather than the released one :/
   val reallyTagRelease = ReleaseStep { state =>
-
     val log = toProcessLogger(state)
 
     val (releaseVer, _) = state.get(ReleaseKeys.versions).getOrElse {
@@ -345,7 +336,6 @@ object Release {
 
     state
   }
-
 
   val settings = Seq(
     releaseProcess := Seq[ReleaseStep](

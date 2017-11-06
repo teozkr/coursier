@@ -9,7 +9,8 @@ object SbtCompatibility {
   type GetClassifiersModule = sbt.librarymanagement.GetClassifiersModule
 
   object SbtPomExtraProperties {
-    def POM_INFO_KEY_PREFIX = sbt.internal.librarymanagement.mavenint.SbtPomExtraProperties.POM_INFO_KEY_PREFIX
+    def POM_INFO_KEY_PREFIX =
+      sbt.internal.librarymanagement.mavenint.SbtPomExtraProperties.POM_INFO_KEY_PREFIX
   }
 
   type MavenRepository = sbt.librarymanagement.MavenRepository

@@ -11,7 +11,7 @@ object TermDisplay {
 
   def defaultFallbackMode: Boolean = {
     val env0 = sys.env.get("COURSIER_PROGRESS").map(_.toLowerCase).collect {
-      case "true"  | "enable"  | "1" => true
+      case "true" | "enable" | "1"   => true
       case "false" | "disable" | "0" => false
     }
     def compatibilityEnv = sys.env.get("COURSIER_NO_TERM").nonEmpty
@@ -25,7 +25,6 @@ object TermDisplay {
 
     env || nonInteractive || insideEmacs || ci
   }
-
 
   private sealed abstract class Info extends Product with Serializable {
     def fraction: Option[Double]
@@ -41,13 +40,18 @@ object TermDisplay {
     updateCheck: Boolean,
     watching: Boolean
   ) extends Info {
+
     /** 0.0 to 1.0 */
     def fraction: Option[Double] = length.map(downloaded.toDouble / _)
+
     /** Byte / s */
     def rate(): Option[Double] = {
       val currentTime = System.currentTimeMillis()
       if (currentTime > startTime)
-        Some((downloaded - previouslyDownloaded).toDouble / (System.currentTimeMillis() - startTime) * 1000.0)
+        Some(
+          (downloaded - previouslyDownloaded).toDouble / (System
+            .currentTimeMillis() - startTime) * 1000.0
+        )
       else
         None
     }
@@ -59,7 +63,7 @@ object TermDisplay {
         bytes + " B"
       else {
         val prefixes = if (si) "kMGTPE" else "KMGTPE"
-        val exp = (math.log(bytes) / math.log(unit)).toInt min prefixes.length
+        val exp = (math.log(bytes) / math.log(unit)).toInt.min(prefixes.length)
         val pre = prefixes.charAt(exp - 1) + (if (si) "" else "i")
         f"${bytes / math.pow(unit, exp)}%.1f ${pre}B"
       }
@@ -104,7 +108,7 @@ object TermDisplay {
   ) extends Info {
     def watching = false
     def fraction = None
-    def display(isDone: Boolean): String = {
+    def display(isDone: Boolean): String =
       if (isDone)
         (currentTimeOpt, remoteTimeOpt) match {
           case (Some(current), Some(remote)) =>
@@ -121,15 +125,13 @@ object TermDisplay {
             s"Last update: ${formatTimestamp(remote)}"
           case (None, None) =>
             "" // ???
-        }
-      else
+        } else
         currentTimeOpt match {
           case Some(current) =>
             s"Checking for updates since ${formatTimestamp(current)}"
           case None =>
             "" // ???
         }
-    }
   }
 
   private class UpdateDisplayRunnable(
@@ -226,11 +228,11 @@ object TermDisplay {
       val total = url.length + 1 + extra.length
       val (url0, extra0) =
         if (total >= width) { // or > ? If equal, does it go down 2 lines?
-        val overflow = total - width + 1
+          val overflow = total - width + 1
 
           val extra0 =
             if (extra.length > baseExtraWidth)
-              extra.take((baseExtraWidth max (extra.length - overflow)) - 1) + "…"
+              extra.take((baseExtraWidth.max(extra.length - overflow)) - 1) + "…"
             else
               extra
 
@@ -239,7 +241,7 @@ object TermDisplay {
 
           val url0 =
             if (total0 >= width)
-              url.take(((width - baseExtraWidth - 1) max (url.length - overflow0)) - 1) + "…"
+              url.take(((width - baseExtraWidth - 1).max(url.length - overflow0)) - 1) + "…"
             else
               url
 
@@ -263,25 +265,28 @@ object TermDisplay {
     private def updateDisplay(): Unit =
       if (!stopped && needsUpdate.getAndSet(false)) {
         val (done0, downloads0) = downloads.synchronized {
-          val q = doneQueue
-            .toVector
+          val q = doneQueue.toVector
             .filter {
               case (url, _) =>
-                !url.endsWith(".sha1") && !url.endsWith(".sha256") && !url.endsWith(".md5") && !url.endsWith("/")
+                !url.endsWith(".sha1") && !url.endsWith(".sha256") && !url.endsWith(".md5") && !url
+                  .endsWith("/")
             }
             .sortBy { case (url, _) => url }
 
           doneQueue.clear()
 
-          val dw = downloads
-            .toVector
-            .map { url => url -> infos.get(url) }
-            .sortBy { case (_, info) => - info.fraction.sum }
+          val dw = downloads.toVector
+            .map { url =>
+              url -> infos.get(url)
+            }
+            .sortBy { case (_, info) => -info.fraction.sum }
 
           (q, dw)
         }
 
-        for (((url, info), isDone) <- done0.iterator.map((_, true)) ++ downloads0.iterator.map((_, false))) {
+        for (((url, info), isDone) <- done0.iterator.map((_, true)) ++ downloads0.iterator.map(
+               (_, false)
+             )) {
           assert(info != null, s"Incoherent state ($url)")
 
           if (!printedAnything0) {
@@ -297,7 +302,10 @@ object TermDisplay {
         val displayedCount = (done0 ++ downloads0).length
 
         if (displayedCount < currentHeight) {
-          for (_ <- 1 to 2; _ <- displayedCount until currentHeight) {
+          for {
+            _ <- 1 to 2
+            _ <- displayedCount until currentHeight
+          } {
             out.clearLine(2)
             out.down(1)
           }
@@ -317,7 +325,10 @@ object TermDisplay {
       }
 
     def stop(): Unit = {
-      for (_ <- 1 to 2; _ <- 0 until currentHeight) {
+      for {
+        _ <- 1 to 2
+        _ <- 0 until currentHeight
+      } {
         out.clearLine(2)
         out.down(1)
       }
@@ -334,10 +345,11 @@ object TermDisplay {
     private def fallbackDisplay(): Unit = {
 
       val downloads0 = downloads.synchronized {
-        downloads
-          .toVector
-          .map { url => url -> infos.get(url) }
-          .sortBy { case (_, info) => - info.fraction.sum }
+        downloads.toVector
+          .map { url =>
+            url -> infos.get(url)
+          }
+          .sortBy { case (_, info) => -info.fraction.sum }
       }
 
       var displayedSomething = false
@@ -447,7 +459,12 @@ class TermDisplay(
       s"Downloading $url\n"
     )
 
-  override def downloadLength(url: String, totalLength: Long, alreadyDownloaded: Long, watching: Boolean): Unit = {
+  override def downloadLength(
+    url: String,
+    totalLength: Long,
+    alreadyDownloaded: Long,
+    watching: Boolean
+  ): Unit = {
     val info = updateRunnable.infos.get(url)
     assert(info != null)
     val newInfo = info match {

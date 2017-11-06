@@ -9,20 +9,20 @@ object Print {
 
   def dependency(dep: Dependency, printExclusions: Boolean): String = {
 
-    def exclusionsStr = dep
-      .exclusions
-      .toVector
-      .sorted
-      .map {
+    def exclusionsStr =
+      dep.exclusions.toVector.sorted.map {
         case (org, name) =>
           s"\n  exclude($org, $name)"
-      }
-      .mkString
+      }.mkString
 
-    s"${dep.module}:${dep.version}:${dep.configuration}" + (if (printExclusions) exclusionsStr else "")
+    s"${dep.module}:${dep.version}:${dep.configuration}" + (if (printExclusions) exclusionsStr
+                                                            else "")
   }
 
-  def dependenciesUnknownConfigs(deps: Seq[Dependency], projects: Map[(Module, String), Project]): String =
+  def dependenciesUnknownConfigs(
+    deps: Seq[Dependency],
+    projects: Map[(Module, String), Project]
+  ): String =
     dependenciesUnknownConfigs(deps, projects, printExclusions = false)
 
   def dependenciesUnknownConfigs(
@@ -47,8 +47,9 @@ object Print {
     val deps1 = minDeps
       .groupBy(_.copy(configuration = "", attributes = Attributes("", "")))
       .toVector
-      .map { case (k, l) =>
-        k.copy(configuration = l.toVector.map(_.configuration).sorted.distinct.mkString(";"))
+      .map {
+        case (k, l) =>
+          k.copy(configuration = l.toVector.map(_.configuration).sorted.distinct.mkString(";"))
       }
       .sortBy { dep =>
         (dep.module.organization, dep.module.name, dep.module.toString, dep.version)
@@ -57,13 +58,11 @@ object Print {
     deps1.map(dependency(_, printExclusions)).mkString("\n")
   }
 
-  private def compatibleVersions(first: String, second: String): Boolean = {
+  private def compatibleVersions(first: String, second: String): Boolean =
     // too loose for now
     // e.g. RCs and milestones should not be considered compatible with subsequent non-RC or
     // milestone versions - possibly not with each other either
-
     first.split('.').take(2).toSeq == second.split('.').take(2).toSeq
-  }
 
   def dependencyTree(
     roots: Seq[Dependency],
@@ -104,10 +103,9 @@ object Print {
                 else
                   s"version $version"
 
-                s"${dep.module}:${dep.version} " +
-                  s"$red(excluded, $versionMsg present anyway)$reset"
-          }
-        else {
+              s"${dep.module}:${dep.version} " +
+                s"$red(excluded, $versionMsg present anyway)$reset"
+          } else {
           val versionStr =
             if (reconciledVersion == dep.version)
               dep.version
@@ -129,29 +127,33 @@ object Print {
         else {
           val dep0 = dep.copy(version = reconciledVersion)
 
-          val dependencies = resolution.dependenciesOf(
-            dep0,
-            withReconciledVersions = false
-          ).sortBy { trDep =>
-            (trDep.module.organization, trDep.module.name, trDep.version)
-          }
-
-          def excluded = resolution
+          val dependencies = resolution
             .dependenciesOf(
-              dep0.copy(exclusions = Set.empty),
+              dep0,
               withReconciledVersions = false
             )
             .sortBy { trDep =>
               (trDep.module.organization, trDep.module.name, trDep.version)
             }
-            .map(_.moduleVersion)
-            .filterNot(dependencies.map(_.moduleVersion).toSet).map {
-              case (mod, ver) =>
-                Elem(
-                  Dependency(mod, ver, "", Set.empty, Attributes("", ""), false, false),
-                  excluded = true
-                )
-            }
+
+          def excluded =
+            resolution
+              .dependenciesOf(
+                dep0.copy(exclusions = Set.empty),
+                withReconciledVersions = false
+              )
+              .sortBy { trDep =>
+                (trDep.module.organization, trDep.module.name, trDep.version)
+              }
+              .map(_.moduleVersion)
+              .filterNot(dependencies.map(_.moduleVersion).toSet)
+              .map {
+                case (mod, ver) =>
+                  Elem(
+                    Dependency(mod, ver, "", Set.empty, Attributes("", ""), false, false),
+                    excluded = true
+                  )
+              }
 
           dependencies.map(Elem(_, excluded = false)) ++
             (if (printExclusions) excluded else Nil)
@@ -187,8 +189,8 @@ object Print {
         val links = for {
           dep <- resolution.dependencies.toVector
           elem <- Elem(dep, excluded = false).children
-        }
-          yield elem.dep.module -> Parent(
+        } yield
+          elem.dep.module -> Parent(
             dep.module,
             dep.version,
             elem.dep.module,
@@ -211,12 +213,18 @@ object Print {
           parents.getOrElse(par.module, Nil)
 
       Tree(
-        resolution
-          .dependencies
-          .toVector
+        resolution.dependencies.toVector
           .sortBy(dep => (dep.module.organization, dep.module.name, dep.version))
-          .map(dep =>
-            Parent(dep.module, dep.version, dep.module, dep.version, dep.version, excluding = false)
+          .map(
+            dep =>
+              Parent(
+                dep.module,
+                dep.version,
+                dep.module,
+                dep.version,
+                dep.version,
+                excluding = false
+            )
           )
       )(children, _.repr)
     } else

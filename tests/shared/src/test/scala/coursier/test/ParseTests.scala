@@ -10,13 +10,13 @@ object ParseTests extends TestSuite {
   def isMavenRepo(repo: Repository): Boolean =
     repo match {
       case _: MavenRepository => true
-      case _ => false
+      case _                  => false
     }
 
   def isIvyRepo(repo: Repository): Boolean =
     repo match {
       case _: IvyRepository => true
-      case _ => false
+      case _                => false
     }
 
   val tests = TestSuite {

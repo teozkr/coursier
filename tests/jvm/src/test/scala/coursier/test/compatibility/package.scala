@@ -7,7 +7,7 @@ import coursier.util.TestEscape
 import coursier.{Cache, Fetch, Platform}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scalaz.{-\/, EitherT, \/, \/-}
+import scalaz.{-\/, \/, \/-, EitherT}
 import scalaz.concurrent.Task
 
 package object compatibility {
@@ -36,11 +36,12 @@ package object compatibility {
   private val fillChunks = sys.env.get("FILL_CHUNKS").exists(s => s == "1" || s == "true")
 
   val artifact: Fetch.Content[Task] = { artifact =>
-
     if (artifact.url.startsWith("file:/") || artifact.url.startsWith("http://localhost:"))
-      EitherT(Platform.readFully(
-        Cache.urlConnection(artifact.url, artifact.authentication).getInputStream
-      ))
+      EitherT(
+        Platform.readFully(
+          Cache.urlConnection(artifact.url, artifact.authentication).getInputStream
+        )
+      )
     else {
 
       assert(artifact.authentication.isEmpty)
@@ -60,8 +61,7 @@ package object compatibility {
           }.handle {
             case e: Exception =>
               -\/(e.toString)
-          }
-        else
+          } else
           Task.now(-\/(s"not found: $path"))
       }
 

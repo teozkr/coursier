@@ -1,6 +1,14 @@
 package coursier.cli
 
-import java.io.{PrintStream, BufferedReader, File, PipedInputStream, PipedOutputStream, InputStream, InputStreamReader}
+import java.io.{
+  BufferedReader,
+  File,
+  InputStream,
+  InputStreamReader,
+  PipedInputStream,
+  PipedOutputStream,
+  PrintStream
+}
 import java.net.URLClassLoader
 
 import caseapp._
@@ -17,8 +25,9 @@ object SparkSubmit {
   def scalaSparkVersions(dependencies: Iterable[Dependency]): Either[String, (String, String)] = {
 
     val sparkCoreMods = dependencies.collect {
-      case dep if dep.module.organization == "org.apache.spark" &&
-        (dep.module.name == "spark-core_2.10" || dep.module.name == "spark-core_2.11") =>
+      case dep
+          if dep.module.organization == "org.apache.spark" &&
+            (dep.module.name == "spark-core_2.10" || dep.module.name == "spark-core_2.11") =>
         (dep.module, dep.version)
     }
 
@@ -28,7 +37,7 @@ object SparkSubmit {
       val scalaVersion = sparkCoreMods.head._1.name match {
         case "spark-core_2.10" => "2.10"
         case "spark-core_2.11" => "2.11"
-        case _ => throw new Exception("Cannot happen")
+        case _                 => throw new Exception("Cannot happen")
       }
 
       val sparkVersion = sparkCoreMods.head._2
@@ -52,8 +61,9 @@ object SparkSubmit {
 @CommandName("spark-submit")
 final case class SparkSubmit(
   @Recurse
-    options: SparkSubmitOptions
-) extends App with ExtraArgsApp {
+  options: SparkSubmitOptions
+) extends App
+    with ExtraArgsApp {
 
   val rawExtraJars = options.extraJars.map(new File(_))
 
@@ -86,8 +96,7 @@ final case class SparkSubmit(
           )
           sys.exit(1)
         case Right(versions) => versions
-      }
-    else
+      } else
       (options.common.scalaVersion, options.sparkVersion)
 
   val (sparkYarnExtraConf, sparkBaseJars) =
@@ -99,7 +108,10 @@ final case class SparkSubmit(
         options.yarnVersion,
         options.defaultAssemblyDependencies.getOrElse(options.autoAssembly),
         options.assemblyDependencies.flatMap(_.split(",")).filter(_.nonEmpty) ++
-          options.sparkAssemblyDependencies.flatMap(_.split(",")).filter(_.nonEmpty).map(_ + s":$sparkVersion"),
+          options.sparkAssemblyDependencies
+            .flatMap(_.split(","))
+            .filter(_.nonEmpty)
+            .map(_ + s":$sparkVersion"),
         options.common,
         options.artifactOptions.artifactTypes(sources = false, javadoc = false)
       )
@@ -121,7 +133,10 @@ final case class SparkSubmit(
         options.yarnVersion,
         options.defaultAssemblyDependencies.getOrElse(true),
         options.assemblyDependencies.flatMap(_.split(",")).filter(_.nonEmpty) ++
-          options.sparkAssemblyDependencies.flatMap(_.split(",")).filter(_.nonEmpty).map(_ + s":$sparkVersion"),
+          options.sparkAssemblyDependencies
+            .flatMap(_.split(","))
+            .filter(_.nonEmpty)
+            .map(_ + s":$sparkVersion"),
         options.common,
         options.artifactOptions.artifactTypes(sources = false, javadoc = false)
       )
@@ -139,7 +154,6 @@ final case class SparkSubmit(
 
       (extraConf, assemblyJars)
     }
-
 
   val idx = {
     val idx0 = extraArgs.indexOf("--")
@@ -160,13 +174,12 @@ final case class SparkSubmit(
     else
       options.mainClass
 
-  val mainJar = helper
-    .loader
+  val mainJar = helper.loader
     .loadClass(mainClass) // FIXME Check for errors, provide a nicer error message in that case
     .getProtectionDomain
     .getCodeSource
     .getLocation
-    .getPath              // TODO Safety check: protocol must be file
+    .getPath // TODO Safety check: protocol must be file
 
   val (check, extraJars0) = jars.partition(_.getAbsolutePath == mainJar)
 
@@ -178,9 +191,11 @@ final case class SparkSubmit(
     )
 
   val extraSparkOpts = sparkYarnExtraConf.flatMap {
-    case (k, v) => Seq(
-      "--conf", s"$k=$v"
-    )
+    case (k, v) =>
+      Seq(
+        "--conf",
+        s"$k=$v"
+      )
   }
 
   val extraJarsOptions =
@@ -212,8 +227,7 @@ final case class SparkSubmit(
     submitLoader,
     Submit.mainClassName,
     sparkSubmitOptions,
-    options.common.verbosityLevel,
-    {
+    options.common.verbosityLevel, {
       if (options.common.verbosityLevel >= 1)
         Console.err.println(
           s"Launching spark-submit with arguments:\n" +
@@ -227,7 +241,6 @@ final case class SparkSubmit(
     }
   )
 }
-
 
 object OutputHelper {
 
@@ -257,7 +270,6 @@ object OutputHelper {
 
     t
   }
-
 
   def handleOutput(yarnAppFileOpt: Option[File], maxIdleTimeOpt: Option[Int]): Unit = {
 
@@ -299,9 +311,8 @@ object OutputHelper {
 
       @volatile var lastMessageTs = -1L
 
-      def updateLastMessageTs() = {
+      def updateLastMessageTs() =
         lastMessageTs = System.currentTimeMillis()
-      }
 
       val checkThread = new Thread {
         override def run() =
@@ -310,7 +321,9 @@ object OutputHelper {
               lastMessageTs = -1L
               Thread.sleep(maxIdleTime * 1000L)
               if (lastMessageTs < 0) {
-                Console.err.println(s"No output from spark-submit for more than $maxIdleTime s, exiting")
+                Console.err.println(
+                  s"No output from spark-submit for more than $maxIdleTime s, exiting"
+                )
                 sys.exit(1)
               }
             }
@@ -334,7 +347,7 @@ object OutputHelper {
     }
 
     def createThread(name: String, replaces: PrintStream, install: PrintStream => Unit): Thread = {
-      val in  = new PipedInputStream
+      val in = new PipedInputStream
       val out = new PipedOutputStream(in)
       install(new PrintStream(out))
       outputInspectThread(name, in, replaces, handlers)

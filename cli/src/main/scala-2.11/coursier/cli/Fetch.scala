@@ -9,10 +9,11 @@ import scala.language.reflectiveCalls
 
 final case class Fetch(
   @Recurse
-    options: FetchOptions
+  options: FetchOptions
 ) extends App {
 
-  val helper = new Helper(options.common, remainingArgs, ignoreErrors = options.artifactOptions.force)
+  val helper =
+    new Helper(options.common, remainingArgs, ignoreErrors = options.artifactOptions.force)
 
   val files0 = helper.fetch(
     sources = options.sources,

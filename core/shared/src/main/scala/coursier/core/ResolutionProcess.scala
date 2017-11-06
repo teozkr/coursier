@@ -3,15 +3,15 @@ package core
 
 import scala.annotation.tailrec
 import scala.language.higherKinds
-import scalaz.{-\/, Monad, \/, \/-}
-import scalaz.Scalaz.{ToFunctorOps, ToBindOps, ToTraverseOps, vectorInstance}
-
+import scalaz.{-\/, \/, \/-, Monad}
+import scalaz.Scalaz.{vectorInstance, ToBindOps, ToFunctorOps, ToTraverseOps}
 
 sealed abstract class ResolutionProcess {
   def run[F[_]](
     fetch: Fetch.Metadata[F],
     maxIterations: Int = ResolutionProcess.defaultMaxIterations
-  )(implicit
+  )(
+    implicit
     F: Monad[F]
   ): F[Resolution] =
     if (maxIterations == 0) F.point(current)
@@ -23,12 +23,11 @@ sealed abstract class ResolutionProcess {
         case Done(res) =>
           F.point(res)
         case missing0 @ Missing(missing, _, _) =>
-          F.bind(ResolutionProcess.fetchAll(missing, fetch))(result =>
-            missing0.next(result).run(fetch, maxIterations0)
+          F.bind(ResolutionProcess.fetchAll(missing, fetch))(
+            result => missing0.next(result).run(fetch, maxIterations0)
           )
         case cont @ Continue(_, _) =>
-          cont
-            .nextNoCont
+          cont.nextNoCont
             .run(fetch, maxIterations0)
       }
     }
@@ -37,7 +36,8 @@ sealed abstract class ResolutionProcess {
   final def next[F[_]](
     fetch: Fetch.Metadata[F],
     fastForward: Boolean = true
-  )(implicit
+  )(
+    implicit
     F: Monad[F]
   ): F[ResolutionProcess] =
     this match {
@@ -104,7 +104,8 @@ final case class Missing(
             order(map0, acc0)
           }
 
-        val orderedSuccesses = order(depMgmtMissing0.map { case (k, v) => k -> v.intersect(modVer) }.toMap, Nil)
+        val orderedSuccesses =
+          order(depMgmtMissing0.map { case (k, v) => k -> v.intersect(modVer) }.toMap, Nil)
 
         val res0 = orderedSuccesses.foldLeft(res) {
           case (acc, (modVer0, (source, proj))) =>
@@ -143,7 +144,7 @@ final case class Continue(
   @tailrec def nextNoCont: ResolutionProcess =
     next match {
       case nextCont: Continue => nextCont.nextNoCont
-      case other => other
+      case other              => other
     }
 
 }
@@ -168,14 +169,16 @@ object ResolutionProcess {
   private[coursier] def fetchAll[F[_]](
     modVers: Seq[(Module, String)],
     fetch: Fetch.Metadata[F]
-  )(implicit F: Monad[F]): F[Vector[((Module, String), Seq[String] \/ (Artifact.Source, Project))]] = {
+  )(
+    implicit F: Monad[F]
+  ): F[Vector[((Module, String), Seq[String] \/ (Artifact.Source, Project))]] = {
 
     def uniqueModules(modVers: Seq[(Module, String)]): Stream[Seq[(Module, String)]] = {
 
       val res = modVers.groupBy(_._1).toSeq.map(_._2).map {
         case Seq(v) => (v, Nil)
-        case Seq() => sys.error("Cannot happen")
-        case v =>
+        case Seq()  => sys.error("Cannot happen")
+        case v      =>
           // there might be version intervals in there, but that shouldn't matter...
           val res = v.maxBy { case (_, v0) => Version(v0) }
           (res, v.filter(_ != res))
@@ -191,14 +194,15 @@ object ResolutionProcess {
       }
     }
 
-    uniqueModules(modVers)
-      .toVector
-      .foldLeft(F.point(Vector.empty[((Module, String), Seq[String] \/ (Artifact.Source, Project))])) {
-        (acc, l) =>
-          for (v <- acc; e <- fetch(l))
-            yield v ++ e
+    uniqueModules(modVers).toVector
+      .foldLeft(
+        F.point(Vector.empty[((Module, String), Seq[String] \/ (Artifact.Source, Project))])
+      ) { (acc, l) =>
+        for {
+          v <- acc
+          e <- fetch(l)
+        } yield v ++ e
       }
   }
 
 }
-

@@ -5,11 +5,13 @@ import scala.util.Try
 
 object Main extends App {
 
-  def classFound(clsName: String) = Try(
-    Thread.currentThread()
-      .getContextClassLoader()
-      .loadClass(clsName)
-  ).toOption.nonEmpty
+  def classFound(clsName: String) =
+    Try(
+      Thread
+        .currentThread()
+        .getContextClassLoader()
+        .loadClass(clsName)
+    ).toOption.nonEmpty
 
   val shapelessFound = classFound("shapeless.HList")
   val argonautFound = classFound("argonaut.Json")

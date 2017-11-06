@@ -11,7 +11,7 @@ import coursier.{Dependency, Module}
 
 final case class MainOptions(
   @ExtraName("org")
-    organization: String = "",
+  organization: String = "",
   name: String = "",
   version: String = "",
   scalaVersion: String = "",
@@ -25,7 +25,9 @@ final case class MainOptions(
 
 object MainApp extends CaseApp[MainOptions] {
 
-  val debug = sys.props.contains("coursier.sbt-launcher.debug") || sys.env.contains("COURSIER_SBT_LAUNCHER_DEBUG")
+  val debug = sys.props.contains("coursier.sbt-launcher.debug") || sys.env.contains(
+    "COURSIER_SBT_LAUNCHER_DEBUG"
+  )
 
   def log(msg: String): Unit =
     if (debug)
@@ -36,7 +38,8 @@ object MainApp extends CaseApp[MainOptions] {
     val sbtPropFile = new File(sys.props("user.dir") + "/sbt.properties")
     val buildPropFile = new File(sys.props("user.dir") + "/project/build.properties")
 
-    val propFileOpt = Some(sbtPropFile).filter(_.exists())
+    val propFileOpt = Some(sbtPropFile)
+      .filter(_.exists())
       .orElse(Some(buildPropFile).filter(_.exists()))
 
     val (org0, name0, ver0, scalaVer0, extraDeps0, mainClass0, sbtVersion0) =
@@ -45,12 +48,23 @@ object MainApp extends CaseApp[MainOptions] {
           log(s"Parsing $propFile")
 
           // can't get ConfigFactory.parseFile to work fine here
-          val conf = ConfigFactory.parseString(new String(Files.readAllBytes(propFile.toPath), StandardCharsets.UTF_8))
-            .withFallback(ConfigFactory.defaultReference(Thread.currentThread().getContextClassLoader))
+          val conf = ConfigFactory
+            .parseString(new String(Files.readAllBytes(propFile.toPath), StandardCharsets.UTF_8))
+            .withFallback(
+              ConfigFactory.defaultReference(Thread.currentThread().getContextClassLoader)
+            )
             .resolve()
           val sbtConfig = SbtConfig.fromConfig(conf)
 
-          (sbtConfig.organization, sbtConfig.moduleName, sbtConfig.version, sbtConfig.scalaVersion, sbtConfig.dependencies, sbtConfig.mainClass, sbtConfig.version)
+          (
+            sbtConfig.organization,
+            sbtConfig.moduleName,
+            sbtConfig.version,
+            sbtConfig.scalaVersion,
+            sbtConfig.dependencies,
+            sbtConfig.mainClass,
+            sbtConfig.version
+          )
         case None =>
           require(options.scalaVersion.nonEmpty, "No scala version specified")
           (
@@ -99,7 +113,10 @@ object MainApp extends CaseApp[MainOptions] {
     val launcher = new Launcher(
       scalaVer0,
       // FIXME Add org & moduleName in this path
-      new File(s"${sys.props("user.dir")}/target/sbt-components/components_scala$scalaVer0${if (sbtVersion0.isEmpty) "" else "_sbt" + sbtVersion0}"),
+      new File(
+        s"${sys.props("user.dir")}/target/sbt-components/components_scala$scalaVer0${if (sbtVersion0.isEmpty) ""
+        else "_sbt" + sbtVersion0}"
+      ),
       new File(s"${sys.props("user.dir")}/target/ivy2")
     )
 

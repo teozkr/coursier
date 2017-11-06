@@ -9,7 +9,9 @@ class ModuleReportOps(val report: sbt.ModuleReport) extends AnyVal {
     report.copy(homepage = homepage)
   def withExtraAttributes(extraAttributes: Map[String, String]): sbt.ModuleReport =
     report.copy(extraAttributes = extraAttributes)
-  def withConfigurations(configurations: Vector[coursier.SbtCompatibility.ConfigRef]): sbt.ModuleReport =
+  def withConfigurations(
+    configurations: Vector[coursier.SbtCompatibility.ConfigRef]
+  ): sbt.ModuleReport =
     report.copy(configurations = configurations.map(_.name))
   def withLicenses(licenses: Vector[(String, Option[String])]): sbt.ModuleReport =
     report.copy(licenses = licenses)

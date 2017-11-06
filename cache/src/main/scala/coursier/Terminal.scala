@@ -15,8 +15,8 @@ object Terminal {
     if (new File("/dev/tty").exists()) {
       import sys.process._
       val nullLog = new ProcessLogger {
-        def out(s: => String): Unit = {}
-        def err(s: => String): Unit = {}
+        def out(s:       => String): Unit = {}
+        def err(s:       => String): Unit = {}
         def buffer[T](f: => T): T = f
       }
       Try(Process(Seq("bash", "-c", s"$pathedTput $s 2> /dev/tty")).!!(nullLog).trim.toInt).toOption
@@ -30,10 +30,12 @@ object Terminal {
       * Move up `n` squares
       */
     def up(n: Int): Unit = if (n > 0) control(n, 'A')
+
     /**
       * Move down `n` squares
       */
     def down(n: Int): Unit = if (n > 0) control(n, 'B')
+
     /**
       * Move left `n` squares
       */

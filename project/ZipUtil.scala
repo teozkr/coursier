@@ -1,4 +1,3 @@
-
 import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
 import java.io.{ByteArrayOutputStream, FileInputStream, FileOutputStream, InputStream}
 import java.nio.charset.StandardCharsets
@@ -9,7 +8,7 @@ import sbt.File
 object ZipUtil {
 
   def addToZip(sourceZip: File, destZip: File, extra: Seq[(String, Array[Byte])]): Unit = {
-    
+
     val is = new FileInputStream(sourceZip)
     val os = new FileOutputStream(destZip)
     val bootstrapZip = new ZipInputStream(is)

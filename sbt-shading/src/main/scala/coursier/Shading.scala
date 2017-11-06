@@ -71,8 +71,7 @@ object Shading {
         Orders.minDependencies(
           dependencies,
           dep =>
-            res
-              .projectCache
+            res.projectCache
               .get(dep)
               .map(_._2.configurations)
               .getOrElse(Map.empty)
@@ -81,13 +80,10 @@ object Shading {
       val includedConfigs = configs.getOrElse(config, Set.empty) + config
 
       minDependencies(
-        currentProject
-          .dependencies
-          .collect {
-            case (cfg, dep) if includedConfigs(cfg) =>
-              dep
-          }
-          .toSet
+        currentProject.dependencies.collect {
+          case (cfg, dep) if includedConfigs(cfg) =>
+            dep
+        }.toSet
       )
     }
 
@@ -122,14 +118,15 @@ object Shading {
         shadedDeps.toVector.map("  " + _).sorted.mkString("\n")
     )
 
-    def files(deps: Set[Dependency]) = res
-      .subset(deps)
-      .dependencies
-      .toSeq
-      .flatMap(dependencyArtifacts.get)
-      .flatten
-      .map(_.url)
-      .flatMap(artifactFilesOrErrors0.get)
+    def files(deps: Set[Dependency]) =
+      res
+        .subset(deps)
+        .dependencies
+        .toSeq
+        .flatMap(dependencyArtifacts.get)
+        .flatten
+        .map(_.url)
+        .flatMap(artifactFilesOrErrors0.get)
 
     val noShadeJars = files(compileOnlyDeps)
     val allShadedConfJars = files(shadedDeps)
@@ -167,7 +164,9 @@ object Shading {
         val prefix = namespace + "."
         val (filteredOut, remaining) = toShade.partition(_.startsWith(prefix))
 
-        log.info(s"${filteredOut.length} classes already filtered out by shaded namespace $namespace")
+        log.info(
+          s"${filteredOut.length} classes already filtered out by shaded namespace $namespace"
+        )
         log.debug(filteredOut.map("  " + _).sorted.mkString("\n"))
 
         remaining

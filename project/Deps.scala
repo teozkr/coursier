@@ -1,4 +1,3 @@
-
 import sbt._
 import sbt.Defaults.sbtPluginExtra
 import sbt.Keys._
@@ -35,7 +34,7 @@ object Deps {
 
     "org.scala-lang.modules" %% "scala-async" % version
   }
-  
+
   def jarjar = "io.get-coursier.jarjar" % "jarjar-core" % "1.0.1-coursier-1"
 
   def jarjarTransitiveDeps = Seq(

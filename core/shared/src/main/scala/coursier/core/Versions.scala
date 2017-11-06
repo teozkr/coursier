@@ -47,7 +47,7 @@ final case class VersionInterval(
 
         case (Some(a), None) => (Some(a), fromIncluded)
         case (None, Some(b)) => (Some(b), other.fromIncluded)
-        case (None, None) => (None, false)
+        case (None, None)    => (None, false)
       }
 
     val (newTo, newToIncluded) =
@@ -60,7 +60,7 @@ final case class VersionInterval(
 
         case (Some(a), None) => (Some(a), toIncluded)
         case (None, Some(b)) => (Some(b), other.toIncluded)
-        case (None, None) => (None, false)
+        case (None, None)    => (None, false)
       }
 
     Some(VersionInterval(newFrom, newTo, newFromIncluded, newToIncluded))
@@ -69,18 +69,19 @@ final case class VersionInterval(
 
   def constraint: VersionConstraint =
     this match {
-      case VersionInterval.zero => VersionConstraint.all
+      case VersionInterval.zero                              => VersionConstraint.all
       case VersionInterval(Some(version), None, true, false) => VersionConstraint.preferred(version)
-      case itv => VersionConstraint.interval(itv)
+      case itv                                               => VersionConstraint.interval(itv)
     }
 
-  def repr: String = Seq(
-    if (fromIncluded) "[" else "(",
-    from.map(_.repr).mkString,
-    ",",
-    to.map(_.repr).mkString,
-    if (toIncluded) "]" else ")"
-  ).mkString
+  def repr: String =
+    Seq(
+      if (fromIncluded) "[" else "(",
+      from.map(_.repr).mkString,
+      ",",
+      to.map(_.repr).mkString,
+      if (toIncluded) "]" else ")"
+    ).mkString
 }
 
 object VersionInterval {

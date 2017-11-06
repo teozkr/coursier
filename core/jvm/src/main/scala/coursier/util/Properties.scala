@@ -7,8 +7,7 @@ object Properties {
   private lazy val props = {
     val p = new JProperties()
     p.load(
-      getClass
-        .getClassLoader
+      getClass.getClassLoader
         .getResourceAsStream("coursier/coursier.properties")
     )
     p

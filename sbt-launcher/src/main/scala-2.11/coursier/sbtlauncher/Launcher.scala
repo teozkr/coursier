@@ -31,8 +31,7 @@ class Launcher(
       else {
         val isLauncherLoader =
           try {
-            cl
-              .asInstanceOf[AnyRef { def getIsolationTargets: Array[String] }]
+            cl.asInstanceOf[AnyRef { def getIsolationTargets: Array[String] }]
               .getIsolationTargets
               .contains("launcher")
           } catch {
@@ -53,13 +52,22 @@ class Launcher(
   val repositories = Seq(
     // mmh, ID "local" seems to be required for publishLocal to be fine if we're launching sbt
     "local" -> Cache.ivy2Local,
-    s"${repositoryIdPrefix}central" -> MavenRepository("https://repo1.maven.org/maven2", sbtAttrStub = true),
-    s"${repositoryIdPrefix}typesafe-ivy-releases" -> IvyRepository.parse(
-      "https://repo.typesafe.com/typesafe/ivy-releases/[organization]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext]"
-    ).leftMap(sys.error).merge,
-    s"${repositoryIdPrefix}sbt-plugin-releases" -> IvyRepository.parse(
-      "https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/[organization]/[module](/scala_[scalaVersion])(/sbt_[sbtVersion])/[revision]/[type]s/[artifact](-[classifier]).[ext]"
-    ).leftMap(sys.error).merge
+    s"${repositoryIdPrefix}central" -> MavenRepository(
+      "https://repo1.maven.org/maven2",
+      sbtAttrStub = true
+    ),
+    s"${repositoryIdPrefix}typesafe-ivy-releases" -> IvyRepository
+      .parse(
+        "https://repo.typesafe.com/typesafe/ivy-releases/[organization]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext]"
+      )
+      .leftMap(sys.error)
+      .merge,
+    s"${repositoryIdPrefix}sbt-plugin-releases" -> IvyRepository
+      .parse(
+        "https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/[organization]/[module](/scala_[scalaVersion])(/sbt_[sbtVersion])/[revision]/[type]s/[artifact](-[classifier]).[ext]"
+      )
+      .leftMap(sys.error)
+      .merge
   )
 
   assert(!repositories.groupBy(_._1).exists(_._2.lengthCompare(1) > 0))
@@ -81,22 +89,22 @@ class Launcher(
     val a = classifiersOpt
       .fold(res.dependencyArtifacts.map(_._2))(res.dependencyClassifiersArtifacts(_).map(_._2))
 
-    val keepArtifactTypes = classifiersOpt.fold(Set("jar", "bundle"))(c => c.map(c => MavenSource.classifierExtensionDefaultTypes.getOrElse((c, "jar"), ???)).toSet)
+    val keepArtifactTypes = classifiersOpt.fold(Set("jar", "bundle"))(
+      c => c.map(c => MavenSource.classifierExtensionDefaultTypes.getOrElse((c, "jar"), ???)).toSet
+    )
 
     a.collect {
-        case artifact if keepArtifactTypes(artifact.`type`) =>
-          def file(policy: CachePolicy) = Cache.file(
-            artifact,
-            cachePolicy = policy,
-            logger = logger
-          )
+      case artifact if keepArtifactTypes(artifact.`type`) =>
+        def file(policy: CachePolicy) = Cache.file(
+          artifact,
+          cachePolicy = policy,
+          logger = logger
+        )
 
-          (file(cachePolicies.head) /: cachePolicies.tail)(_ orElse file(_))
-            .run
-            .map(artifact.->)
-      }
+        (file(cachePolicies.head) /: cachePolicies.tail)(_.orElse(file(_))).run
+          .map(artifact.->)
+    }
   }
-
 
   def isOverrideRepositories = false // ???
 
@@ -160,9 +168,11 @@ class Launcher(
     )
 
     val logger =
-      Some(new TermDisplay(
-        new OutputStreamWriter(System.err)
-      ))
+      Some(
+        new TermDisplay(
+          new OutputStreamWriter(System.err)
+        )
+      )
 
     logger.foreach(_.init {
       System.err.println(s"Resolving Scala $version (organization $scalaOrg)")
@@ -191,9 +201,11 @@ class Launcher(
     }
 
     val artifactLogger =
-      Some(new TermDisplay(
-        new OutputStreamWriter(System.err)
-      ))
+      Some(
+        new TermDisplay(
+          new OutputStreamWriter(System.err)
+        )
+      )
 
     artifactLogger.foreach(_.init {
       System.err.println(s"Fetching Scala $version artifacts (organization $scalaOrg)")
@@ -207,7 +219,7 @@ class Launcher(
     }
 
     val errors = results.collect { case (a, -\/(err)) => (a, err) }
-    val files = results.collect { case (_, \/-(f)) => f }
+    val files = results.collect { case (_, \/-(f))    => f }
 
     if (errors.nonEmpty) {
       Console.err.println(s"Error downloading artifacts:\n${errors.map("  " + _).mkString("\n")}")
@@ -224,7 +236,6 @@ class Launcher(
       case (id, m: MavenRepository) =>
         Repository.Maven(id, new URL(m.root))
       case (id, i: IvyRepository) =>
-
         assert(i.metadataPatternOpt.forall(_ == i.pattern))
 
         val (base, pat) = i.pattern.string.span(c => c != '[' && c != '$' && c != '(')
@@ -276,7 +287,8 @@ class Launcher(
       id => app(id, id.version())
     )
 
-    val loader = new URLClassLoader(files.filterNot(scalaFiles.toSet).map(_.toURI.toURL).toArray, scalaLoader)
+    val loader =
+      new URLClassLoader(files.filterNot(scalaFiles.toSet).map(_.toURI.toURL).toArray, scalaLoader)
     val mainClass0 = loader.loadClass(id.mainClass).asSubclass(classOf[xsbti.AppMain])
 
     AppProvider(
@@ -308,9 +320,11 @@ class Launcher(
     )
 
     val logger =
-      Some(new TermDisplay(
-        new OutputStreamWriter(System.err)
-      ))
+      Some(
+        new TermDisplay(
+          new OutputStreamWriter(System.err)
+        )
+      )
 
     val extraMsg =
       if (extra.isEmpty)
@@ -345,9 +359,11 @@ class Launcher(
     }
 
     val artifactLogger =
-      Some(new TermDisplay(
-        new OutputStreamWriter(System.err)
-      ))
+      Some(
+        new TermDisplay(
+          new OutputStreamWriter(System.err)
+        )
+      )
 
     artifactLogger.foreach(_.init {
       System.err.println(s"Fetching ${id0.groupID}:${id0.name}:${id0.version} artifacts")
@@ -361,7 +377,7 @@ class Launcher(
     }
 
     val errors = results.collect { case (a, -\/(err)) => (a, err) }
-    val files = results.collect { case (_, \/-(f)) => f }
+    val files = results.collect { case (_, \/-(f))    => f }
 
     if (errors.nonEmpty) {
       Console.err.println(s"Error downloading artifacts:\n${errors.map("  " + _).mkString("\n")}")
@@ -376,15 +392,18 @@ class Launcher(
     )
 
     val scalaArtifactLogger =
-      Some(new TermDisplay(
-        new OutputStreamWriter(System.err)
-      ))
+      Some(
+        new TermDisplay(
+          new OutputStreamWriter(System.err)
+        )
+      )
 
     scalaArtifactLogger.foreach(_.init {
       System.err.println(s"Fetching ${id0.groupID}:${id0.name}:${id0.version} Scala artifacts")
     })
 
-    val scalaResults = Task.gatherUnordered(tasks(scalaSubRes, scalaArtifactLogger)).unsafePerformSync
+    val scalaResults =
+      Task.gatherUnordered(tasks(scalaSubRes, scalaArtifactLogger)).unsafePerformSync
 
     scalaArtifactLogger.foreach { l =>
       if (l.stopDidPrintSomething())
@@ -392,10 +411,12 @@ class Launcher(
     }
 
     val scalaErrors = scalaResults.collect { case (a, -\/(err)) => (a, err) }
-    val scalaFiles = scalaResults.collect { case (_, \/-(f)) => f }
+    val scalaFiles = scalaResults.collect { case (_, \/-(f))    => f }
 
     if (scalaErrors.nonEmpty) {
-      Console.err.println(s"Error downloading artifacts:\n${scalaErrors.map("  " + _).mkString("\n")}")
+      Console.err.println(
+        s"Error downloading artifacts:\n${scalaErrors.map("  " + _).mkString("\n")}"
+      )
       sys.exit(1)
     }
 
@@ -433,9 +454,11 @@ class Launcher(
     if (componentProvider.component("xsbti").isEmpty)
       componentProvider.defineComponentNoCopy("xsbti", Array(interfaceJar))
     if (componentProvider.component("compiler-interface").isEmpty)
-      componentProvider.defineComponentNoCopy("compiler-interface", Array(compilerInterfaceSourceJar))
+      componentProvider
+        .defineComponentNoCopy("compiler-interface", Array(compilerInterfaceSourceJar))
     if (componentProvider.component("compiler-interface-src").isEmpty)
-      componentProvider.defineComponentNoCopy("compiler-interface-src", Array(compilerInterfaceSourceJar))
+      componentProvider
+        .defineComponentNoCopy("compiler-interface-src", Array(compilerInterfaceSourceJar))
   }
 
   private def sbtInterfaceComponentFiles(sbtVersion: String): (File, File) = {
@@ -449,9 +472,11 @@ class Launcher(
       )
 
       val logger =
-        Some(new TermDisplay(
-          new OutputStreamWriter(System.err)
-        ))
+        Some(
+          new TermDisplay(
+            new OutputStreamWriter(System.err)
+          )
+        )
 
       logger.foreach(_.init {
         System.err.println(s"Resolving org.scala-sbt:interface:$sbtVersion")
@@ -485,9 +510,11 @@ class Launcher(
     lazy val interfaceJar = {
 
       val artifactLogger =
-        Some(new TermDisplay(
-          new OutputStreamWriter(System.err)
-        ))
+        Some(
+          new TermDisplay(
+            new OutputStreamWriter(System.err)
+          )
+        )
 
       artifactLogger.foreach(_.init {
         System.err.println(s"Fetching org.scala-sbt:interface:$sbtVersion artifacts")
@@ -501,7 +528,7 @@ class Launcher(
       }
 
       val errors = results.collect { case (a, -\/(err)) => (a, err) }
-      val files = results.collect { case (_, \/-(f)) => f }
+      val files = results.collect { case (_, \/-(f))    => f }
 
       if (errors.nonEmpty) {
         Console.err.println(s"Error downloading artifacts:\n${errors.map("  " + _).mkString("\n")}")
@@ -521,15 +548,18 @@ class Launcher(
     lazy val compilerInterfaceSourcesJar = {
 
       val artifactLogger =
-        Some(new TermDisplay(
-          new OutputStreamWriter(System.err)
-        ))
+        Some(
+          new TermDisplay(
+            new OutputStreamWriter(System.err)
+          )
+        )
 
       artifactLogger.foreach(_.init {
         System.err.println(s"Fetching org.scala-sbt:interface:$sbtVersion source artifacts")
       })
 
-      val results = Task.gatherUnordered(tasks(res, artifactLogger, Some(Seq("sources")))).unsafePerformSync
+      val results =
+        Task.gatherUnordered(tasks(res, artifactLogger, Some(Seq("sources")))).unsafePerformSync
 
       artifactLogger.foreach { l =>
         if (l.stopDidPrintSomething())
@@ -537,7 +567,7 @@ class Launcher(
       }
 
       val errors = results.collect { case (a, -\/(err)) => (a, err) }
-      val files = results.collect { case (_, \/-(f)) => f }
+      val files = results.collect { case (_, \/-(f))    => f }
 
       if (errors.nonEmpty) {
         Console.err.println(s"Error downloading artifacts:\n${errors.map("  " + _).mkString("\n")}")
@@ -550,7 +580,9 @@ class Launcher(
         case List(jar) =>
           jar
         case _ =>
-          sys.error(s"Too many compiler-interface source JAR for sbt $sbtVersion: ${files.mkString(", ")}")
+          sys.error(
+            s"Too many compiler-interface source JAR for sbt $sbtVersion: ${files.mkString(", ")}"
+          )
       }
     }
 
@@ -568,9 +600,11 @@ class Launcher(
       )
 
       val logger =
-        Some(new TermDisplay(
-          new OutputStreamWriter(System.err)
-        ))
+        Some(
+          new TermDisplay(
+            new OutputStreamWriter(System.err)
+          )
+        )
 
       logger.foreach(_.init {
         System.err.println(s"Resolving org.scala-sbt:compiler-interface:$sbtVersion")
@@ -604,22 +638,30 @@ class Launcher(
     val files = {
 
       val artifactLogger =
-        Some(new TermDisplay(
-          new OutputStreamWriter(System.err)
-        ))
+        Some(
+          new TermDisplay(
+            new OutputStreamWriter(System.err)
+          )
+        )
 
       artifactLogger.foreach(_.init {
-        System.err.println(s"Fetching org.scala-sbt:compiler-interface:$sbtVersion source artifacts")
+        System.err.println(
+          s"Fetching org.scala-sbt:compiler-interface:$sbtVersion source artifacts"
+        )
       })
 
-      val results = Task.gatherUnordered(
-        tasks(res, artifactLogger, None) ++
-          tasks(res, artifactLogger, Some(Seq("sources")))
-      ).unsafePerformSync
+      val results = Task
+        .gatherUnordered(
+          tasks(res, artifactLogger, None) ++
+            tasks(res, artifactLogger, Some(Seq("sources")))
+        )
+        .unsafePerformSync
 
       artifactLogger.foreach { l =>
         if (l.stopDidPrintSomething())
-          System.err.println(s"Fetched org.scala-sbt:compiler-interface:$sbtVersion source artifacts")
+          System.err.println(
+            s"Fetched org.scala-sbt:compiler-interface:$sbtVersion source artifacts"
+          )
       }
 
       val errors = results.collect { case (a, -\/(err)) => (a, err) }
@@ -632,8 +674,13 @@ class Launcher(
       results.collect { case (_, \/-(f)) => f }
     }
 
-    files.find(f => f.getName == "compiler-interface-src.jar" || f.getName == "compiler-interface-sources.jar").getOrElse {
-      sys.error("compiler-interface-src not found")
-    }
+    files
+      .find(
+        f =>
+          f.getName == "compiler-interface-src.jar" || f.getName == "compiler-interface-sources.jar"
+      )
+      .getOrElse {
+        sys.error("compiler-interface-src not found")
+      }
   }
 }

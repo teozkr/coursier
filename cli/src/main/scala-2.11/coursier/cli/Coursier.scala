@@ -23,49 +23,51 @@ final case class CoursierCommandHelper(
 }
 
 object CoursierCommandHelper {
-  type U = Union.`'bootstrap -> Bootstrap, 'fetch -> Fetch, 'launch -> Launch, 'resolve -> Resolve, 'sparksubmit -> SparkSubmit`.T
+  type U =
+    Union.`'bootstrap -> Bootstrap, 'fetch -> Fetch, 'launch -> Launch, 'resolve -> Resolve, 'sparksubmit -> SparkSubmit`.T
 
   // Partially deriving these ones manually, to circumvent more-or-less random failures during auto derivation
   // Only running into those with the new custom sbt launcher though :-|
 
   implicit def commandParser: CommandParser[CoursierCommandHelper] =
-    CommandParser.ccons(
-      Witness('bootstrap),
-      AnnotationOption[CommandName, Bootstrap],
-      Parser[Bootstrap],
-      CommandParser.ccons(
-        Witness('fetch),
-        AnnotationOption[CommandName, Fetch],
-        Parser[Fetch],
+    CommandParser
+      .ccons(
+        Witness('bootstrap),
+        AnnotationOption[CommandName, Bootstrap],
+        Parser[Bootstrap],
         CommandParser.ccons(
-          Witness('launch),
-          AnnotationOption[CommandName, Launch],
-          Parser[Launch],
+          Witness('fetch),
+          AnnotationOption[CommandName, Fetch],
+          Parser[Fetch],
           CommandParser.ccons(
-            Witness('resolve),
-            AnnotationOption[CommandName, Resolve],
-            Parser[Resolve],
+            Witness('launch),
+            AnnotationOption[CommandName, Launch],
+            Parser[Launch],
             CommandParser.ccons(
-              Witness('sparksubmit),
-              AnnotationOption[CommandName, SparkSubmit],
-              Parser[SparkSubmit],
-              CommandParser.cnil
+              Witness('resolve),
+              AnnotationOption[CommandName, Resolve],
+              Parser[Resolve],
+              CommandParser.ccons(
+                Witness('sparksubmit),
+                AnnotationOption[CommandName, SparkSubmit],
+                Parser[SparkSubmit],
+                CommandParser.cnil
+              )
             )
           )
         )
       )
-    ).map(CoursierCommandHelper(_))
-
+      .map(CoursierCommandHelper(_))
 
   // Cut-n-pasted from caseapp.core.CommandsMessages.ccons, fixing the type of argsName
-  private def commandsMessagesCCons[K <: Symbol, H, T <: Coproduct]
-   (implicit
-     key: Witness.Aux[K],
-     commandName: AnnotationOption[CommandName, H],
-     parser: Strict[Parser[H]],
-     argsName: AnnotationOption[ArgsName, H],
-     tail: CommandsMessages[T]
-   ): CommandsMessages[FieldType[K, H] :+: T] = {
+  private def commandsMessagesCCons[K <: Symbol, H, T <: Coproduct](
+    implicit
+    key: Witness.Aux[K],
+    commandName: AnnotationOption[CommandName, H],
+    parser: Strict[Parser[H]],
+    argsName: AnnotationOption[ArgsName, H],
+    tail: CommandsMessages[T]
+  ): CommandsMessages[FieldType[K, H] :+: T] = {
     // FIXME Duplicated in CommandParser.ccons
     val name = commandName().map(_.commandName).getOrElse {
       pascalCaseSplit(key.value.name.toList.takeWhile(_ != '$'))
@@ -73,12 +75,13 @@ object CoursierCommandHelper {
         .mkString("-")
     }
 
-    CommandsMessages((name -> CommandMessages(
-      parser.value.args,
-      argsName().map(_.argsName)
-    )) +: tail.messages)
+    CommandsMessages(
+      (name -> CommandMessages(
+        parser.value.args,
+        argsName().map(_.argsName)
+      )) +: tail.messages
+    )
   }
-
 
   implicit def commandsMessages: CommandsMessages[CoursierCommandHelper] =
     CommandsMessages(
@@ -116,12 +119,13 @@ object CoursierCommandHelper {
     )
 }
 
-object Coursier extends CommandAppOf[
-  // Temporary using CoursierCommandHelper instead of the union type, until case-app
-  // supports the latter directly.
-  // Union.`'bootstrap -> Bootstrap, 'fetch -> Fetch, 'launch -> Launch, 'resolve -> Resolve`.T
-  CoursierCommandHelper
-] {
+object Coursier
+    extends CommandAppOf[
+      // Temporary using CoursierCommandHelper instead of the union type, until case-app
+      // supports the latter directly.
+      // Union.`'bootstrap -> Bootstrap, 'fetch -> Fetch, 'launch -> Launch, 'resolve -> Resolve`.T
+      CoursierCommandHelper
+    ] {
   override def appName = "Coursier"
   override def progName = "coursier"
   override def appVersion = coursier.util.Properties.version

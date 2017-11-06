@@ -35,9 +35,7 @@ object IvyXml {
     log: sbt.Logger
   ): Unit = {
 
-    val ivyCacheManager = ivySbt.withIvy(log)(ivy =>
-      ivy.getResolutionCacheManager
-    )
+    val ivyCacheManager = ivySbt.withIvy(log)(ivy => ivy.getResolutionCacheManager)
 
     val ivyModule = ModuleRevisionId.newInstance(
       currentProject.module.organization,
@@ -63,8 +61,7 @@ object IvyXml {
 
     val filterOutDependencies =
       shadedConfigOpt.toSet[String].flatMap { shadedConfig =>
-        project0
-          .dependencies
+        project0.dependencies
           .collect { case (`shadedConfig`, dep) => dep }
       }
 
@@ -109,14 +106,14 @@ object IvyXml {
           n
     }
 
-    val publications = project
-      .publications
-      .groupBy { case (_, p) => p }
+    val publications = project.publications
+      .groupBy { case (_, p)             => p }
       .mapValues { _.map { case (cfg, _) => cfg } }
 
     val publicationElems = publications.map {
       case (pub, configs) =>
-        val n = <artifact name={pub.name} type={pub.`type`} ext={pub.ext} conf={configs.mkString(",")} />
+        val n =
+          <artifact name={pub.name} type={pub.`type`} ext={pub.ext} conf={configs.mkString(",")} />
 
         if (pub.classifier.nonEmpty)
           n % <x e:classifier={pub.classifier} />.attributes
@@ -131,7 +128,8 @@ object IvyXml {
             <exclude org={org} module={name} name="*" type="*" ext="*" conf="" matcher="exact"/>
         }
 
-        val n = <dependency org={dep.module.organization} name={dep.module.name} rev={dep.version} conf={s"$conf->${dep.configuration}"}>
+        val n =
+          <dependency org={dep.module.organization} name={dep.module.name} rev={dep.version} conf={s"$conf->${dep.configuration}"}>
           {excludes}
         </dependency>
 

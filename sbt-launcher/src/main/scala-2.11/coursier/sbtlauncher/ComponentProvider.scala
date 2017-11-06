@@ -14,8 +14,7 @@ final class ComponentProvider(cacheDir: File) extends xsbti.ComponentProvider {
 
   def component(componentId: String): Array[File] = {
     val res = components0.getOrElse[Array[File]](
-      componentId,
-      {
+      componentId, {
         val dir = componentLocation(componentId)
         if (dir.exists())
           Option(dir.listFiles()).getOrElse(Array())
@@ -51,9 +50,8 @@ final class ComponentProvider(cacheDir: File) extends xsbti.ComponentProvider {
     dest
   }
 
-  def defineComponentNoCopy(componentId: String, components: Array[File]): Unit = {
+  def defineComponentNoCopy(componentId: String, components: Array[File]): Unit =
     components0 += componentId -> components.distinct
-  }
   def defineComponent(componentId: String, components: Array[File]): Unit = {
     clear(componentId)
     components0 += componentId -> components.distinct.map(copying(componentId, _))

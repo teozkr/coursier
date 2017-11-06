@@ -6,7 +6,7 @@ import java.nio.channels.{FileLock, OverlappingFileLockException}
 
 import org.http4s._
 import org.http4s.dsl._
-import org.http4s.headers.{Authorization, `Content-Type`}
+import org.http4s.headers.{`Content-Type`, Authorization}
 import org.http4s.server.blaze.BlazeBuilder
 import org.http4s.server.{Server, ServerApp}
 
@@ -19,13 +19,13 @@ import scalaz.concurrent.Task
 final case class AuthOptions(
   @ExtraName("u")
   @ValueDescription("user")
-    user: String = "",
+  user: String = "",
   @ExtraName("P")
   @ValueDescription("password")
-    password: String = "",
+  password: String = "",
   @ExtraName("r")
   @ValueDescription("realm")
-    realm: String = ""
+  realm: String = ""
 ) {
   def checks(): Unit = {
     if (user.nonEmpty && password.isEmpty)
@@ -50,37 +50,37 @@ final case class AuthOptions(
 
 final case class VerbosityOptions(
   @ExtraName("v")
-    verbose: Int @@ Counter = Tag.of(0),
+  verbose: Int @@ Counter = Tag.of(0),
   @ExtraName("q")
-    quiet: Boolean = false
+  quiet: Boolean = false
 ) {
   lazy val verbosityLevel = Tag.unwrap(verbose) - (if (quiet) 1 else 0)
 }
 
 final case class HttpServerOptions(
   @Recurse
-    auth: AuthOptions = AuthOptions(),
+  auth: AuthOptions = AuthOptions(),
   @Recurse
-    verbosity: VerbosityOptions = VerbosityOptions(),
+  verbosity: VerbosityOptions = VerbosityOptions(),
   @ExtraName("d")
   @ValueDescription("served directory")
-    directory: String = ".",
+  directory: String = ".",
   @ExtraName("h")
   @ValueDescription("host")
-    host: String = "0.0.0.0",
+  host: String = "0.0.0.0",
   @ExtraName("p")
   @ValueDescription("port")
-    port: Int = 8080,
+  port: Int = 8080,
   @ExtraName("s")
-    acceptPost: Boolean = false,
+  acceptPost: Boolean = false,
   @ExtraName("t")
-    acceptPut: Boolean = false,
+  acceptPut: Boolean = false,
   @ExtraName("w")
   @HelpMessage("Accept write requests. Equivalent to -s -t")
-    acceptWrite: Boolean = false,
+  acceptWrite: Boolean = false,
   @ExtraName("l")
   @HelpMessage("Generate content listing pages for directories")
-    listPages: Boolean = false
+  listPages: Boolean = false
 )
 
 object HttpServer {
@@ -94,12 +94,11 @@ object HttpServer {
     var lock: FileLock = null
     try {
       os = new FileOutputStream(f)
-      lock =
-        try os.getChannel.tryLock()
-        catch {
-          case _: OverlappingFileLockException =>
-            null
-        }
+      lock = try os.getChannel.tryLock()
+      catch {
+        case _: OverlappingFileLockException =>
+          null
+      }
 
       if (lock == null)
         false
@@ -127,8 +126,6 @@ object HttpServer {
       else
         None
     }
-
-
 
   def directoryListingPage(dir: File, title: String): Task[String] =
     Task {
@@ -159,7 +156,6 @@ object HttpServer {
          |</html>
        """.stripMargin
     }
-
 
   def unauthorized(realm: String) = Unauthorized(Challenge("Basic", realm))
 
@@ -201,7 +197,9 @@ object HttpServer {
           }
       }
 
-  def authenticated(options: AuthOptions, verbosityLevel: Int)(pf: PartialFunction[Request, Task[Response]]): HttpService =
+  def authenticated(options: AuthOptions, verbosityLevel: Int)(
+    pf: PartialFunction[Request, Task[Response]]
+  ): HttpService =
     authenticated0(options, verbosityLevel)(HttpService(pf))
 
   def putService(baseDir: File, auth: AuthOptions, verbosityLevel: Int) =
@@ -241,11 +239,11 @@ object HttpServer {
             isDirOpt <- isDirectory(f)
             resp <- isDirOpt match {
               case Some(true) if listPages =>
-                directoryListingPage(f, relPath).flatMap(page =>
-                  Ok(page).withContentType(Some(`Content-Type`(MediaType.`text/html`)))
+                directoryListingPage(f, relPath).flatMap(
+                  page => Ok(page).withContentType(Some(`Content-Type`(MediaType.`text/html`)))
                 )
               case Some(false) => Ok(f)
-              case _ => NotFound()
+              case _           => NotFound()
             }
           } yield resp
 
@@ -283,8 +281,10 @@ object HttpServer {
 
       if (verbosityLevel >= 1 && options.host == "0.0.0.0") {
         Console.err.println(s"Listening on addresses")
-        for (itf <- NetworkInterface.getNetworkInterfaces.asScala; addr <- itf.getInetAddresses.asScala)
-          Console.err.println(s"  ${addr.getHostAddress} (${itf.getName})")
+        for {
+          itf <- NetworkInterface.getNetworkInterfaces.asScala
+          addr <- itf.getInetAddresses.asScala
+        } Console.err.println(s"  ${addr.getHostAddress} (${itf.getName})")
       }
     }
 
@@ -308,7 +308,6 @@ object HttpServerApp extends ServerApp {
         sys.error("unreached") // need to adjust return type of error method in CaseApp
 
       case Right((WithHelp(usage, help, t), remainingArgs, extraArgs)) =>
-
         if (help)
           app.helpAsked()
 
@@ -321,7 +320,6 @@ object HttpServerApp extends ServerApp {
             sys.error("unreached")
 
           case Right(opts) =>
-
             val extraArgs0 = remainingArgs ++ extraArgs
 
             if (extraArgs0.nonEmpty)
