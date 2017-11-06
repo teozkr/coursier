@@ -174,7 +174,7 @@ object Pattern {
     implicit def fromString(s: String): Chunk = Const(s)
   }
 
-  import Chunk.{ Var, Opt }
+  import Chunk.{Var, Opt}
 
   // Corresponds to
   //   [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]

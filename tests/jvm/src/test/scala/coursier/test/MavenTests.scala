@@ -1,6 +1,6 @@
 package coursier.test
 
-import coursier.{ Attributes, Dependency, Module }
+import coursier.{Attributes, Dependency, Module}
 import coursier.maven.MavenRepository
 
 import utest._

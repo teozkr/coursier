@@ -2,7 +2,7 @@ package coursier
 package cli
 
 import java.io.File
-import java.net.{ URL, URLClassLoader }
+import java.net.{URL, URLClassLoader}
 
 import caseapp._
 

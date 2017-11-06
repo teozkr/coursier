@@ -1,11 +1,11 @@
 package coursier
 
-import java.io.{ File, FileNotFoundException, IOException }
-import java.net.{ HttpURLConnection, URL, URLConnection }
+import java.io.{File, FileNotFoundException, IOException}
+import java.net.{HttpURLConnection, URL, URLConnection}
 
 import scala.language.higherKinds
 
-import scalaz.{ EitherT, Monad }
+import scalaz.{EitherT, Monad}
 import scalaz.syntax.monad._
 import scalaz.Scalaz.ToEitherOps
 

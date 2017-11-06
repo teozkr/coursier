@@ -1,6 +1,6 @@
 package coursier.util
 
-import coursier.core.{ Attributes, Dependency, Module, Orders, Project, Resolution }
+import coursier.core.{Attributes, Dependency, Module, Orders, Project, Resolution}
 
 object Print {
 

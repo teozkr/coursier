@@ -5,7 +5,7 @@ import coursier.util.Xml
 import java.util.regex.Pattern.quote
 
 import scala.collection.JavaConverters._
-import scala.xml.{ Attribute, MetaData, Null }
+import scala.xml.{Attribute, MetaData, Null}
 
 import org.jsoup.Jsoup
 

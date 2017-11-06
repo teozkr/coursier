@@ -2,7 +2,7 @@ package coursier
 package cli
 
 import caseapp._
-import caseapp.core.{ ArgsApp, CommandMessages, CommandsMessages }
+import caseapp.core.{ArgsApp, CommandMessages, CommandsMessages}
 import caseapp.core.util.pascalCaseSplit
 import caseapp.util.AnnotationOption
 

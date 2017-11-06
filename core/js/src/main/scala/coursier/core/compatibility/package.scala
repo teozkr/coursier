@@ -1,7 +1,7 @@
 package coursier.core
 
 import scala.scalajs.js
-import js.Dynamic.{ global => g }
+import js.Dynamic.{global => g}
 import org.scalajs.dom.raw.NodeList
 
 import coursier.util.Xml

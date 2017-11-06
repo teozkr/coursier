@@ -8,7 +8,7 @@ object FileUtil {
 
   private object Java7 {
 
-    import java.nio.file.{ Files, StandardCopyOption }
+    import java.nio.file.{Files, StandardCopyOption}
 
     def atomicMove(from: File, to: File): Unit =
       Files.move(from.toPath, to.toPath, StandardCopyOption.ATOMIC_MOVE)

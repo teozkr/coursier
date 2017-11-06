@@ -2,7 +2,7 @@ package coursier
 package test
 
 import utest._
-import scala.async.Async.{ async, await }
+import scala.async.Async.{async, await}
 
 import coursier.Platform.fetch
 import coursier.test.compatibility._

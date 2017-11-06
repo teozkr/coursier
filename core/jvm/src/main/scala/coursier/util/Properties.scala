@@ -1,6 +1,6 @@
 package coursier.util
 
-import java.util.{ Properties => JProperties }
+import java.util.{Properties => JProperties}
 
 object Properties {
 

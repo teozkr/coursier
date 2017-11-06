@@ -3,7 +3,7 @@ package coursier.ivy
 import coursier.core._
 import coursier.util.Xml._
 
-import scalaz.{ Node => _, _ }, Scalaz._
+import scalaz.{Node => _, _}, Scalaz._
 
 object IvyXml {
 

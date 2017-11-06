@@ -3,9 +3,9 @@ package web
 
 import coursier.maven.MavenSource
 
-import japgolly.scalajs.react.vdom.{ TagMod, Attr }
+import japgolly.scalajs.react.vdom.{Attr, TagMod}
 import japgolly.scalajs.react.vdom.Attrs.dangerouslySetInnerHtml
-import japgolly.scalajs.react.{ ReactEventI, ReactComponentB, BackendScope }
+import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactEventI}
 import japgolly.scalajs.react.vdom.prefix_<^._
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 import org.scalajs.jquery.jQuery
@@ -13,7 +13,7 @@ import org.scalajs.jquery.jQuery
 import scala.concurrent.Future
 
 import scala.scalajs.js
-import js.Dynamic.{ global => g }
+import js.Dynamic.{global => g}
 
 final case class ResolutionOptions(
   followOptional: Boolean = false

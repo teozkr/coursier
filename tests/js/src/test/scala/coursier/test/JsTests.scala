@@ -5,7 +5,7 @@ import coursier.test.compatibility._
 
 import utest._
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{Future, Promise}
 
 object JsTests extends TestSuite {
 

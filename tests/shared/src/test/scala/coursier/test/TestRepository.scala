@@ -5,7 +5,7 @@ import coursier.core._
 
 import scala.language.higherKinds
 
-import scalaz.{ Monad, EitherT }
+import scalaz.{EitherT, Monad}
 import scalaz.Scalaz._
 
 final case class TestRepository(projects: Map[(Module, String), Project]) extends Repository {

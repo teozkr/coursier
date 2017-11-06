@@ -1,10 +1,10 @@
 package coursier
 
 import java.math.BigInteger
-import java.net.{ HttpURLConnection, URL, URLConnection, URLStreamHandler, URLStreamHandlerFactory }
-import java.nio.channels.{ OverlappingFileLockException, FileLock }
+import java.net.{HttpURLConnection, URL, URLConnection, URLStreamHandler, URLStreamHandlerFactory}
+import java.nio.channels.{OverlappingFileLockException, FileLock}
 import java.security.MessageDigest
-import java.util.concurrent.{ Callable, ConcurrentHashMap, Executors, ExecutorService }
+import java.util.concurrent.{Callable, ConcurrentHashMap, Executors, ExecutorService}
 import java.util.regex.Pattern
 
 import coursier.core.Authentication
@@ -16,12 +16,12 @@ import scala.annotation.tailrec
 
 import scalaz._
 import scalaz.Scalaz.ToEitherOps
-import scalaz.concurrent.{ Task, Strategy }
+import scalaz.concurrent.{Strategy, Task}
 
-import java.io.{ Serializable => _, _ }
+import java.io.{Serializable => _, _}
 import java.nio.charset.Charset
 
-import scala.concurrent.duration.{ Duration, DurationInt }
+import scala.concurrent.duration.{Duration, DurationInt}
 import scala.util.Try
 import scala.util.control.NonFatal
 

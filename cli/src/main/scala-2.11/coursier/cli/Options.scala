@@ -1,7 +1,7 @@
 package coursier
 package cli
 
-import caseapp.{ HelpMessage => Help, ValueDescription => Value, ExtraName => Short, _ }
+import caseapp.{HelpMessage => Help, ValueDescription => Value, ExtraName => Short, _}
 
 import coursier.core.ResolutionProcess
 import coursier.util.Parse

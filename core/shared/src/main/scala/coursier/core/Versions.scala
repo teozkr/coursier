@@ -1,6 +1,6 @@
 package coursier.core
 
-import scalaz.{ -\/, \/, \/- }
+import scalaz.{-\/, \/, \/-}
 import scalaz.Scalaz.ToEitherOps
 
 final case class VersionInterval(

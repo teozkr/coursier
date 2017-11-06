@@ -5,11 +5,11 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.ExecutorService
 
 import argonaut._, Argonaut._, ArgonautShapeless._
-import coursier.core.{ Artifact, Attributes }
-import coursier.{ Fetch, Module }
+import coursier.core.{Artifact, Attributes}
+import coursier.{Fetch, Module}
 
 import scala.language.higherKinds
-import scalaz.{ -\/, EitherT, Monad, Nondeterminism, \/, \/- }
+import scalaz.{-\/, EitherT, Monad, Nondeterminism, \/, \/-}
 import scalaz.Scalaz.ToEitherOps
 import scalaz.Scalaz.ToEitherOpsFromEither
 import scalaz.concurrent.Task

@@ -1,6 +1,6 @@
 package coursier
 
-import java.io.{ File, Writer }
+import java.io.{File, Writer}
 import java.sql.Timestamp
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicBoolean

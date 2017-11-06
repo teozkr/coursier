@@ -1,9 +1,9 @@
 package coursier.test
 
-import coursier.{ Dependency, Module, Cache }
+import coursier.{Cache, Dependency, Module}
 import coursier.test.compatibility._
 
-import scala.async.Async.{ async, await }
+import scala.async.Async.{async, await}
 
 import utest._
 

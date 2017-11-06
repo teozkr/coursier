@@ -1,9 +1,9 @@
 package coursier
 package cli
 
-import java.io.{ OutputStreamWriter, File }
-import java.net.{ URL, URLClassLoader }
-import java.util.jar.{ Manifest => JManifest }
+import java.io.{File, OutputStreamWriter}
+import java.net.{URL, URLClassLoader}
+import java.util.jar.{Manifest => JManifest}
 import java.util.concurrent.Executors
 
 import coursier.cli.scaladex.Scaladex
@@ -16,7 +16,7 @@ import scala.concurrent.duration.Duration
 import scala.util.Try
 
 import scalaz.{Failure, Nondeterminism, Success, \/-, -\/}
-import scalaz.concurrent.{ Task, Strategy }
+import scalaz.concurrent.{Strategy, Task}
 import scalaz.std.list._
 
 object Helper {

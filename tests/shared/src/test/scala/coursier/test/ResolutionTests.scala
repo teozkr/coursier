@@ -4,7 +4,7 @@ package test
 import coursier.core.Repository
 import coursier.maven.MavenRepository
 import utest._
-import scala.async.Async.{ async, await }
+import scala.async.Async.{async, await}
 
 import coursier.test.compatibility._
 

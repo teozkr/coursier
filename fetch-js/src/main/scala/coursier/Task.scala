@@ -1,7 +1,7 @@
 package coursier
 
-import scala.concurrent.{ ExecutionContext, Future }
-import scalaz.{ Nondeterminism, Reducer }
+import scala.concurrent.{ExecutionContext, Future}
+import scalaz.{Nondeterminism, Reducer}
 
 /**
  * Minimal Future-based Task.

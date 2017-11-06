@@ -5,8 +5,8 @@ import java.net.URLClassLoader
 
 import caseapp._
 
-import coursier.{ Attributes, Dependency }
-import coursier.cli.spark.{ Assembly, Submit }
+import coursier.{Attributes, Dependency}
+import coursier.cli.spark.{Assembly, Submit}
 import coursier.internal.FileUtil
 import coursier.util.Parse
 

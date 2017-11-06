@@ -5,7 +5,7 @@ import java.util.regex.Pattern.quote
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
-import scalaz.{ \/-, -\/ }
+import scalaz.{\/-, -\/}
 
 object Resolution {
 
